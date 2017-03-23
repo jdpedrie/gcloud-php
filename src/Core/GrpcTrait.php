@@ -191,6 +191,7 @@ trait GrpcTrait
         $value = preg_replace('/\.(\d{1,9})Z/', '.000000Z', $value);
         $dt = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s.u\Z', $value);
         $nanos = (isset($matches[1])) ? $matches[1] : 0;
+
         return [
             'seconds' => (int)$dt->format('U'),
             'nanos' => (int)$nanos
