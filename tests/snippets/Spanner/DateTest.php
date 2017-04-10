@@ -37,6 +37,10 @@ class DateTest extends SnippetTestCase
 
     public function testClass()
     {
+        if (!extension_loaded('grpc')) {
+            $this->markTestSkipped('Must have the grpc extension installed to run this test.');
+        }
+
         $snippet = $this->snippetFromClass(Date::class);
         $res = $snippet->invoke('date');
 

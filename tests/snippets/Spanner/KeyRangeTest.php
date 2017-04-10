@@ -34,6 +34,10 @@ class KeyRangeTest extends SnippetTestCase
 
     public function testClass()
     {
+        if (!extension_loaded('grpc')) {
+            $this->markTestSkipped('Must have the grpc extension installed to run this test.');
+        }
+
         $snippet = $this->snippetFromClass(KeyRange::class);
         $snippet->addUse(KeyRange::class);
         $res = $snippet->invoke('range');

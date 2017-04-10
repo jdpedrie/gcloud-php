@@ -47,6 +47,10 @@ class SpannerClientTest extends SnippetTestCase
 
     public function setUp()
     {
+        if (!extension_loaded('grpc')) {
+            $this->markTestSkipped('Must have the grpc extension installed to run this test.');
+        }
+
         $this->connection = $this->prophesize(ConnectionInterface::class);
         $this->client = \Google\Cloud\Dev\stub(SpannerClient::class);
         $this->client->___setProperty('connection', $this->connection->reveal());

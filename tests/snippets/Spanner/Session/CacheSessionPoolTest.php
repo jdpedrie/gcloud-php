@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+namespace Google\Cloud\Tests\Snippets\Spanner;
+
 use Google\Auth\Cache\MemoryCacheItemPool;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
 use Google\Cloud\Spanner\Database;
@@ -27,6 +29,10 @@ class CacheSessionPoolTest extends SnippetTestCase
 {
     public function testClass()
     {
+        if (!extension_loaded('grpc')) {
+            $this->markTestSkipped('Must have the grpc extension installed to run this test.');
+        }
+
         $snippet = $this->snippetFromClass(CacheSessionPool::class);
         $snippet->replace('$cache =', '//$cache =');
         $snippet->addLocal('cache', new MemoryCacheItemPool);

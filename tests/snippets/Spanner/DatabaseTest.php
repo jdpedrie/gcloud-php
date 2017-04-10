@@ -83,6 +83,10 @@ class DatabaseTest extends SnippetTestCase
 
     public function testClass()
     {
+        if (!extension_loaded('grpc')) {
+            $this->markTestSkipped('Must have the grpc extension installed to run this test.');
+        }
+
         $snippet = $this->snippetFromClass(Database::class);
         $res = $snippet->invoke('database');
         $this->assertInstanceOf(Database::class, $res->returnVal());
@@ -91,6 +95,10 @@ class DatabaseTest extends SnippetTestCase
 
     public function testClassViaInstance()
     {
+        if (!extension_loaded('grpc')) {
+            $this->markTestSkipped('Must have the grpc extension installed to run this test.');
+        }
+
         $snippet = $this->snippetFromClass(Database::class, 1);
         $res = $snippet->invoke('database');
         $this->assertInstanceOf(Database::class, $res->returnVal());

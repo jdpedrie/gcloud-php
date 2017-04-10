@@ -58,6 +58,10 @@ class ResultTest extends SnippetTestCase
 
     public function testClass()
     {
+        if (!extension_loaded('grpc')) {
+            $this->markTestSkipped('Must have the grpc extension installed to run this test.');
+        }
+
         $snippet = $this->snippetFromClass(Result::class);
         $snippet->replace('$database =', '//$database =');
         $snippet->addLocal('database', $this->database);
