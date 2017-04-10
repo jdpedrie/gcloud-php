@@ -116,14 +116,12 @@ class Grpc implements ConnectionInterface
     public function __construct(array $config = [])
     {
         $this->codec = new PhpArray([
-            'customFilters' => [
-                'commitTimestamp' => function ($v) {
-                    return $this->formatTimestampFromApi($v);
-                },
-                'readTimestamp' => function ($v) {
-                    return $this->formatTimestampFromApi($v);
-                }
-            ]
+            'commitTimestamp' => function ($v) {
+                return $this->formatTimestampFromApi($v);
+            },
+            'readTimestamp' => function ($v) {
+                return $this->formatTimestampFromApi($v);
+            }
         ]);
 
         $config['codec'] = $this->codec;
@@ -207,7 +205,7 @@ class Grpc implements ConnectionInterface
     {
         $instanceObject = $this->instanceObject($args);
 
-        $mask = array_keys($instanceObject->serialize(new PhpArray(['useCamelCase' => false])));
+        $mask = array_keys($instanceObject->serialize(new PhpArray([], false)));
 
         $fieldMask = (new protobuf\FieldMask())->deserialize(['paths' => $mask], $this->codec);
 

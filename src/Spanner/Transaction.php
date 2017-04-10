@@ -451,11 +451,6 @@ class Transaction
         return $this->state;
     }
 
-    public function id()
-    {
-        return $this->transactionId;
-    }
-
     /**
      * Format, validate and enqueue mutations in the transaction.
      *
