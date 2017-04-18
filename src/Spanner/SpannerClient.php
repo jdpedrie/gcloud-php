@@ -34,9 +34,9 @@ use google\spanner\admin\instance\v1\Instance\State;
 use Psr\Http\StreamInterface;
 
 /**
- * Google Cloud Spanner is a highly scalable, transactional, managed, NewSQL
+ * Cloud Spanner is a highly scalable, transactional, managed, NewSQL
  * database service. Find more information at
- * [Google Cloud Spanner docs](https://cloud.google.com/spanner/).
+ * [Cloud Spanner docs](https://cloud.google.com/spanner/).
  *
  * Example:
  * ```

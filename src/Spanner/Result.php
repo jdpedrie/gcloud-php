@@ -22,7 +22,7 @@ use Google\Cloud\Spanner\Session\Session;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 
 /**
- * Represent a Google Cloud Spanner lookup result (either read or executeSql).
+ * Represent a Cloud Spanner lookup result (either read or executeSql).
  *
  * Example:
  * ```

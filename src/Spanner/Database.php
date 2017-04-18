@@ -32,7 +32,7 @@ use Google\Cloud\Spanner\V1\SpannerClient as GrpcSpannerClient;
 use Google\GAX\ValidationException;
 
 /**
- * Represents a Google Cloud Spanner Database.
+ * Represents a Cloud Spanner Database.
  *
  * Example:
  * ```
@@ -114,12 +114,12 @@ class Database
      * Create an object representing a Database.
      *
      * @param ConnectionInterface $connection The connection to the
-     *        Google Cloud Spanner Admin API.
+     *        Cloud Spanner Admin API.
      * @param Instance $instance The instance in which the database exists.
      * @param LongRunningConnectionInterface $lroConnection An implementation
      *        mapping to methods which handle LRO resolution in the service.
      * @param string $projectId The project ID.
-     * @param string $name The database name.
+     * @param string $name The database name or ID.
      * @param SessionPoolInterface $sessionPool [optional] The session pool
      *        implementation.
      * @param bool $returnInt64AsObject [optional If true, 64 bit integers will
@@ -691,9 +691,9 @@ class Database
     /**
      * Update a row.
      *
-     * Only data which you wish to update need be included. You must provide
-     * enough information for the API to determine which row should be modified.
-     * In most cases, this means providing values for the Primary Key fields.
+     * Only data which you wish to update need be included. The list of columns
+     * must contain enough columns to allow Cloud Spanner to derive values for
+     * all primary key columns in the row to be modified.
      *
      * Mutations are committed in a single-use transaction.
      *
@@ -722,9 +722,9 @@ class Database
     /**
      * Update multiple rows.
      *
-     * Only data which you wish to update need be included. You must provide
-     * enough information for the API to determine which row should be modified.
-     * In most cases, this means providing values for the Primary Key fields.
+     * Only data which you wish to update need be included. The list of columns
+     * must contain enough columns to allow Cloud Spanner to derive values for
+     * all primary key columns in the row(s) to be modified.
      *
      * Mutations are committed in a single-use transaction.
      *
@@ -854,9 +854,9 @@ class Database
     /**
      * Replace a row.
      *
-     * Provide data for the entire row. Google Cloud Spanner will attempt to
-     * find a record matching the Primary Key, and will replace the entire row.
-     * If a matching row is not found, it will be inserted.
+     * Provide data for the entire row. Cloud Spanner will attempt to find a
+     * record matching the Primary Key, and will replace the entire row. If a
+     * matching row is not found, it will be inserted.
      *
      * Mutations are committed in a single-use transaction.
      *
@@ -886,9 +886,9 @@ class Database
     /**
      * Replace multiple rows.
      *
-     * Provide data for the entire row. Google Cloud Spanner will attempt to
-     * find a record matching the Primary Key, and will replace the entire row.
-     * If a matching row is not found, it will be inserted.
+     * Provide data for the entire row. Cloud Spanner will attempt to find a
+     * record matching the Primary Key, and will replace the entire row. If a
+     * matching row is not found, it will be inserted.
      *
      * Mutations are committed in a single-use transaction.
      *

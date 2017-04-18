@@ -22,7 +22,7 @@ use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use RuntimeException;
 
 /**
- * Manages interaction with Google Cloud Spanner inside a Transaction.
+ * Manages interaction with Cloud Spanner inside a Transaction.
  *
  * Transactions can be started via
  * {@see Google\Cloud\Spanner\Database::runTransaction()} (recommended) or via

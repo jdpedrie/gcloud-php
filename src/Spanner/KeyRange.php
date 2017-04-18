@@ -18,7 +18,7 @@
 namespace Google\Cloud\Spanner;
 
 /**
- * Represents a Google Cloud Spanner KeyRange.
+ * Represents a Cloud Spanner KeyRange.
  *
  * Example:
  * ```

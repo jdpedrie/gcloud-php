@@ -20,7 +20,7 @@ namespace Google\Cloud\Spanner;
 use Google\Cloud\Core\ValidateTrait;
 
 /**
- * Represents a Google Cloud Spanner KeySet.
+ * Represents a Cloud Spanner KeySet.
  *
  * Example:
  * ```

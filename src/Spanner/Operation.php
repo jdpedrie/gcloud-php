@@ -24,9 +24,9 @@ use Google\Cloud\Spanner\Session\Session;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 
 /**
- * Common interface for running operations against Google Cloud Spanner. This
- * class is intended for internal use by the client library only. Implementors
- * should access these operations via {@see Google\Cloud\Spanner\Database} or
+ * Common interface for running operations against Cloud Spanner. This class is
+ * intended for internal use by the client library only. Implementors should
+ * access these operations via {@see Google\Cloud\Spanner\Database} or
  * {@see Google\Cloud\Spanner\Transaction}.
  *
  * Usage examples may be found in classes making use of this class:
