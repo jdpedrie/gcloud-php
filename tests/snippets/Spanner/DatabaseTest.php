@@ -19,8 +19,10 @@ namespace Google\Cloud\Tests\Snippets\Spanner;
 
 use Google\Cloud\Core\Iam\Iam;
 use Google\Cloud\Core\LongRunning\LongRunningConnectionInterface;
+use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
 use Google\Cloud\Spanner\Admin\Database\V1\DatabaseAdminClient;
+use Google\Cloud\Spanner\Admin\Instance\V1\InstanceAdminClient;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Instance;
@@ -51,7 +53,7 @@ class DatabaseTest extends SnippetTestCase
     public function setUp()
     {
         $instance = $this->prophesize(Instance::class);
-        $instance->name()->willReturn(self::INSTANCE);
+        $instance->name()->willReturn(InstanceAdminClient::formatInstanceName(self::PROJECT, self::INSTANCE));
 
         $session = $this->prophesize(Session::class);
 
@@ -172,6 +174,23 @@ class DatabaseTest extends SnippetTestCase
         $res = $snippet->invoke('info');
         $this->assertEquals($db, $res->returnVal());
         $snippet->invoke();
+    }
+
+    /**
+     * @group spanneradmin
+     */
+    public function testCreate()
+    {
+        $snippet = $this->snippetFromMethod(Database::class, 'create');
+        $snippet->addLocal('database', $this->database);
+
+        $this->connection->createDatabase(Argument::any())
+            ->shouldBeCalled();
+
+        $this->database->___setProperty('connection', $this->connection->reveal());
+
+        $res = $snippet->invoke('operation');
+        $this->assertInstanceOf(LongRunningOperation::class, $res->returnVal());
     }
 
     /**

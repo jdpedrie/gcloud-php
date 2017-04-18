@@ -37,11 +37,13 @@ class AbortedException extends ServiceException
             return false;
         });
 
-        $delay = $metadata[0]['retryDelay'];
-        if (!isset($delay['seconds'])) {
-            $delay['seconds'] = 0;
+        if (count($metadata) === 0) {
+            return ['seconds' => 0, 'nanos' => 0];
         }
 
-        return $delay;
+        return $metadata[0]['retryDelay'] + [
+            'seconds' => 0,
+            'nanos' => 0
+        ];
     }
 }

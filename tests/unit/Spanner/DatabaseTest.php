@@ -23,6 +23,7 @@ use Google\Cloud\Core\Iam\Iam;
 use Google\Cloud\Core\LongRunning\LongRunningConnectionInterface;
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Admin\Database\V1\DatabaseAdminClient;
+use Google\Cloud\Spanner\Admin\Instance\V1\InstanceAdminClient;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Duration;
@@ -77,7 +78,7 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
         $this->sessionPool->release(Argument::type(Session::class))
             ->willReturn(null);
 
-        $this->instance->name()->willReturn(self::INSTANCE);
+        $this->instance->name()->willReturn(InstanceAdminClient::formatInstanceName(self::PROJECT, self::INSTANCE));
 
         $args = [
             $this->connection->reveal(),
@@ -96,12 +97,55 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
         $this->database = \Google\Cloud\Dev\stub(Database::class, $args, $props);
     }
 
+    public function testName()
+    {
+        $this->assertEquals($this->database->name(), DatabaseAdminClient::formatDatabaseName(self::PROJECT, self::INSTANCE, self::DATABASE));
+    }
+
+    public function testInfo()
+    {
+        $res = [
+            'name' => $this->database->name()
+        ];
+
+        $this->connection->getDatabase(Argument::any())
+            ->shouldBeCalledTimes(1)
+            ->willReturn($res);
+
+        $this->database->___setProperty('connection', $this->connection->reveal());
+
+        $this->assertEquals($res, $this->database->info());
+
+        // Make sure the request only is sent once.
+        $this->database->info();
+    }
+
+    public function testReload()
+    {
+        $res = [
+            'name' => $this->database->name()
+        ];
+
+        $this->connection->getDatabase(Argument::any())
+            ->shouldBeCalledTimes(2)
+            ->willReturn($res);
+
+        $this->database->___setProperty('connection', $this->connection->reveal());
+
+        $this->assertEquals($res, $this->database->reload());
+
+        // Make sure the request is sent each time the method is called.
+        $this->database->reload();
+    }
+
     /**
      * @group spanneradmin
      */
     public function testExists()
     {
-        $this->connection->getDatabase(Argument::any())
+        $this->connection->getDatabase(Argument::withEntry(
+            'name', DatabaseAdminClient::formatDatabaseName(self::PROJECT, self::INSTANCE, self::DATABASE)
+        ))
             ->shouldBeCalled()
             ->willReturn([]);
 

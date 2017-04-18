@@ -22,14 +22,15 @@ use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Core\Iam\Iam;
 use Google\Cloud\Core\Iterator\ItemIterator;
 use Google\Cloud\Core\Iterator\PageIterator;
-use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Core\LongRunning\LROTrait;
 use Google\Cloud\Core\LongRunning\LongRunningConnectionInterface;
+use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Admin\Database\V1\DatabaseAdminClient;
 use Google\Cloud\Spanner\Admin\Instance\V1\InstanceAdminClient;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\IamInstance;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
+use Google\GAX\ValidationException;
 use google\spanner\admin\instance\v1\Instance\State;
 
 /**
@@ -51,6 +52,8 @@ class Instance
 
     const STATE_READY = State::READY;
     const STATE_CREATING = State::CREATING;
+
+    const DEFAULT_NODE_COUNT = 1;
 
     /**
      * @var ConnectionInterface
@@ -101,7 +104,7 @@ class Instance
      *        mapping to methods which handle LRO resolution in the service.
      * @param array $lroCallables
      * @param string $projectId The project ID.
-     * @param string $name The instance name.
+     * @param string $name The instance name or ID.
      * @param bool $returnInt64AsObject [optional] If true, 64 bit integers will be
      *        returned as a {@see Google\Cloud\Core\Int64} object for 32 bit platform
      *        compatibility. **Defaults to** false.
@@ -120,7 +123,7 @@ class Instance
         $this->lroConnection = $lroConnection;
         $this->lroCallables = $lroCallables;
         $this->projectId = $projectId;
-        $this->name = $name;
+        $this->name = $this->fullyQualifiedInstanceName($name, $projectId);
         $this->returnInt64AsObject = $returnInt64AsObject;
         $this->info = $info;
     }
@@ -207,10 +210,56 @@ class Instance
     public function reload(array $options = [])
     {
         $this->info = $this->connection->getInstance($options + [
-            'name' => $this->fullyQualifiedInstanceName()
+            'name' => $this->name
         ]);
 
         return $this->info;
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * Example:
+     * ```
+     * $operation = $instance->create($configuration);
+     * ```
+     *
+     * @codingStandardsIgnoreStart
+     * @see https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.admin.instance.v1#createinstancerequest CreateInstanceRequest
+     *
+     * @param InstanceConfiguration $config The configuration to use
+     * @param string $name The instance name
+     * @param array $options [optional] {
+     *     Configuration options
+     *
+     *     @type string $displayName **Defaults to** the value of $name.
+     *     @type int $nodeCount **Defaults to** `1`.
+     *     @type array $labels For more information, see
+     *           [Using labels to organize Google Cloud Platform resources](https://cloudplatform.googleblog.com/2015/10/using-labels-to-organize-Google-Cloud-Platform-resources.html).
+     * }
+     * @return LongRunningOperation<Instance>
+     * @codingStandardsIgnoreEnd
+     */
+    public function create(InstanceConfiguration $config, array $options = [])
+    {
+        $instanceId = InstanceAdminClient::parseInstanceFromInstanceName($this->name);
+        $options += [
+            'displayName' => $instanceId,
+            'nodeCount' => self::DEFAULT_NODE_COUNT,
+            'labels' => [],
+        ];
+
+        // This must always be set to CREATING, so overwrite anything else.
+        $options['state'] = State::CREATING;
+
+        $operation = $this->connection->createInstance([
+            'instanceId' => $instanceId,
+            'name' => $this->name,
+            'projectId' => InstanceAdminClient::formatProjectName($this->projectId),
+            'config' => $config->name()
+        ] + $options);
+
+        return $this->lro($this->lroConnection, $operation['name'], $this->lroCallables);
     }
 
     /**
@@ -280,7 +329,7 @@ class Instance
         ];
 
         $operation = $this->connection->updateInstance([
-            'name' => $this->fullyQualifiedInstanceName(),
+            'name' => $this->name,
         ] + $options);
 
         return $this->lro($this->lroConnection, $operation['name'], $this->lroCallables);
@@ -304,7 +353,7 @@ class Instance
     public function delete(array $options = [])
     {
         return $this->connection->deleteInstance($options + [
-            'name' => $this->fullyQualifiedInstanceName()
+            'name' => $this->name
         ]);
     }
 
@@ -313,7 +362,7 @@ class Instance
      *
      * Example:
      * ```
-     * $database = $instance->createDatabase('my-database');
+     * $operation = $instance->createDatabase('my-database');
      * ```
      *
      * @codingStandardsIgnoreStart
@@ -325,24 +374,17 @@ class Instance
      *     Configuration Options
      *
      *     @type array $statements Additional DDL statements.
+     *     @type SessionPoolInterface $sessionPool A pool used to manage
+     *           sessions.
      * }
      * @return LongRunningOperation<Database>
      */
     public function createDatabase($name, array $options = [])
     {
-        $options += [
-            'statements' => [],
-        ];
+        $instantiation = $this->pluckArray(['sessionPool'], $options);
 
-        $statement = sprintf('CREATE DATABASE `%s`', $name);
-
-        $operation = $this->connection->createDatabase([
-            'instance' => $this->fullyQualifiedInstanceName(),
-            'createStatement' => $statement,
-            'extraStatements' => $options['statements']
-        ]);
-
-        return $this->lro($this->lroConnection, $operation['name'], $this->lroCallables);
+        $database = $this->database($name, $instantiation);
+        return $database->create($options);
     }
 
     /**
@@ -406,11 +448,10 @@ class Instance
         return new ItemIterator(
             new PageIterator(
                 function (array $database) {
-                    $name = DatabaseAdminClient::parseDatabaseFromDatabaseName($database['name']);
-                    return $this->database($name);
+                    return $this->database($database['name']);
                 },
                 [$this->connection, 'listDatabases'],
-                $options + ['instance' => $this->fullyQualifiedInstanceName()],
+                $options + ['instance' => $this->name],
                 [
                     'itemsKey' => 'databases',
                     'resultLimit' => $resultLimit
@@ -434,7 +475,7 @@ class Instance
         if (!$this->iam) {
             $this->iam = new Iam(
                 new IamInstance($this->connection),
-                $this->fullyQualifiedInstanceName()
+                $this->name
             );
         }
 
@@ -444,11 +485,20 @@ class Instance
     /**
      * Convert the simple instance name to a fully qualified name.
      *
+     * @param string $name The instance name.
+     * @param string $project The project ID.
      * @return string
      */
-    private function fullyQualifiedInstanceName()
+    private function fullyQualifiedInstanceName($name, $project)
     {
-        return InstanceAdminClient::formatInstanceName($this->projectId, $this->name);
+        // try {
+            return InstanceAdminClient::formatInstanceName(
+                $project,
+                $name
+            );
+        // } catch (ValidationException $e) {
+        //     return $name;
+        // }
     }
 
     /**

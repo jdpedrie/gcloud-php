@@ -23,9 +23,11 @@ use Google\Cloud\Core\LongRunning\LongRunningConnectionInterface;
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
 use Google\Cloud\Spanner\Admin\Database\V1\DatabaseAdminClient;
+use Google\Cloud\Spanner\Admin\Instance\V1\InstanceAdminClient;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Instance;
+use Google\Cloud\Spanner\InstanceConfiguration;
 use Prophecy\Argument;
 
 /**
@@ -62,7 +64,29 @@ class InstanceTest extends SnippetTestCase
         $snippet = $this->snippetFromClass(Instance::class);
         $res = $snippet->invoke('instance');
         $this->assertInstanceOf(Instance::class, $res->returnVal());
-        $this->assertEquals(self::INSTANCE, $res->returnVal()->name());
+        $this->assertEquals(InstanceAdminClient::formatInstanceName(self::PROJECT, self::INSTANCE), $res->returnVal()->name());
+    }
+
+    /**
+     * @group spanneradmin
+     */
+    public function testCreate()
+    {
+        $config = $this->prophesize(InstanceConfiguration::class);
+        $config->name()->willReturn(InstanceAdminClient::formatInstanceConfigName(self::PROJECT, 'foo'));
+
+        $snippet = $this->snippetFromMethod(Instance::class, 'create');
+        $snippet->addLocal('configuration', $config->reveal());
+        $snippet->addLocal('instance', $this->instance);
+
+        $this->connection->createInstance(Argument::any())
+            ->shouldBeCalled()
+            ->willReturn(['name' => 'operations/foo']);
+
+        $this->instance->___setProperty('connection', $this->connection->reveal());
+
+        $res = $snippet->invoke('operation');
+        $this->assertInstanceOf(LongRunningOperation::class, $res->returnVal());
     }
 
     public function testName()
@@ -71,7 +95,7 @@ class InstanceTest extends SnippetTestCase
         $snippet->addLocal('instance', $this->instance);
 
         $res = $snippet->invoke('name');
-        $this->assertEquals(self::INSTANCE, $res->returnVal());
+        $this->assertEquals(InstanceAdminClient::formatInstanceName(self::PROJECT, self::INSTANCE), $res->returnVal());
     }
 
     public function testInfo()
@@ -177,7 +201,7 @@ class InstanceTest extends SnippetTestCase
 
         $this->instance->___setProperty('connection', $this->connection->reveal());
 
-        $res = $snippet->invoke('database');
+        $res = $snippet->invoke('operation');
         $this->assertInstanceOf(LongRunningOperation::class, $res->returnVal());
     }
 
@@ -201,7 +225,7 @@ class InstanceTest extends SnippetTestCase
             ->willReturn([
                 'databases' => [
                     [
-                        'name' => 'projects/'. self::PROJECT .'/instances/'. self::INSTANCE .'/databases/'. self::DATABASE
+                        'name' => DatabaseAdminClient::formatDatabaseName(self::PROJECT, self::INSTANCE, self::DATABASE)
                     ]
                 ]
             ]);

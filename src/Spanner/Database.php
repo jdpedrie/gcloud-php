@@ -24,6 +24,8 @@ use Google\Cloud\Core\LongRunning\LROTrait;
 use Google\Cloud\Core\LongRunning\LongRunningConnectionInterface;
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Core\Retry;
+use Google\Cloud\Spanner\Admin\Database\V1\DatabaseAdminClient;
+use Google\Cloud\Spanner\Admin\Instance\V1\InstanceAdminClient;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\IamDatabase;
 use Google\Cloud\Spanner\Session\Session;
@@ -233,6 +235,42 @@ class Database
         }
 
         return true;
+    }
+
+    /**
+     * Create a new Cloud Spanner database.
+     *
+     * Example:
+     * ```
+     * $operation = $database->create();
+     * ```
+     *
+     * @codingStandardsIgnoreStart
+     * @see https://cloud.google.com/spanner/reference/rpc/google.spanner.admin.database.v1#createdatabaserequest CreateDatabaseRequest
+     * @codingStandardsIgnoreEnd
+     *
+     * @param array $options [optional] {
+     *     Configuration Options
+     *
+     *     @type array $statements Additional DDL statements.
+     * }
+     * @return LongRunningOperation<Database>
+     */
+    public function create(array $options = [])
+    {
+        $options += [
+            'statements' => [],
+        ];
+
+        $statement = sprintf('CREATE DATABASE `%s`', DatabaseAdminClient::parseDatabaseFromDatabaseName($this->name));
+
+        $operation = $this->connection->createDatabase([
+            'instance' => $this->instance->name(),
+            'createStatement' => $statement,
+            'extraStatements' => $options['statements']
+        ]);
+
+        return $this->lro($this->lroConnection, $operation['name'], $this->lroCallables);
     }
 
     /**
@@ -1348,10 +1386,12 @@ class Database
      */
     private function fullyQualifiedDatabaseName($name)
     {
+        $instance = InstanceAdminClient::parseInstanceFromInstanceName($this->instance->name());
+
         try {
             return GrpcSpannerClient::formatDatabaseName(
                 $this->projectId,
-                $this->instance->name(),
+                $instance,
                 $name
             );
         } catch (ValidationException $e) {

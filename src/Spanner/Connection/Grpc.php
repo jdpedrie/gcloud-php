@@ -142,7 +142,7 @@ class Grpc implements ConnectionInterface
     /**
      * @param array $args
      */
-    public function listConfigs(array $args)
+    public function listInstanceConfigs(array $args)
     {
         return $this->send([$this->instanceAdminClient, 'listInstanceConfigs'], [
             $this->pluck('projectId', $args),
@@ -153,7 +153,7 @@ class Grpc implements ConnectionInterface
     /**
      * @param array $args
      */
-    public function getConfig(array $args)
+    public function getInstanceConfig(array $args)
     {
         return $this->send([$this->instanceAdminClient, 'getInstanceConfig'], [
             $this->pluck('name', $args),

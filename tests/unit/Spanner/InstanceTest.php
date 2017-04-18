@@ -60,7 +60,7 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
 
     public function testName()
     {
-        $this->assertEquals(self::NAME, $this->instance->name());
+        $this->assertEquals(self::NAME, InstanceAdminClient::parseInstanceFromInstanceName($this->instance->name()));
     }
 
     public function testInfo()

@@ -191,12 +191,12 @@ class GrpcTest extends \PHPUnit_Framework_TestCase
 
         return [
             [
-                'listConfigs',
+                'listInstanceConfigs',
                 ['projectId' => self::PROJECT],
                 [self::PROJECT, []]
             ],
             [
-                'getConfig',
+                'getInstanceConfig',
                 ['name' => $configName],
                 [$configName, []]
             ],

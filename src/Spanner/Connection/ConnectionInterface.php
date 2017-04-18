@@ -25,12 +25,12 @@ interface ConnectionInterface
     /**
      * @param array $args
      */
-    public function listConfigs(array $args);
+    public function listInstanceConfigs(array $args);
 
     /**
      * @param array $args
      */
-    public function getConfig(array $args);
+    public function getInstanceConfig(array $args);
 
     /**
      * @param array $args
