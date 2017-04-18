@@ -20,6 +20,7 @@ namespace Google\Cloud\Tests\Snippets\Spanner;
 use Google\Cloud\Core\Iam\Iam;
 use Google\Cloud\Core\LongRunning\LongRunningConnectionInterface;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
+use Google\Cloud\Spanner\Admin\Database\V1\DatabaseAdminClient;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Instance;
@@ -90,7 +91,7 @@ class DatabaseTest extends SnippetTestCase
         $snippet = $this->snippetFromClass(Database::class);
         $res = $snippet->invoke('database');
         $this->assertInstanceOf(Database::class, $res->returnVal());
-        $this->assertEquals(self::DATABASE, $res->returnVal()->name());
+        $this->assertEquals(self::DATABASE, DatabaseAdminClient::parseDatabaseFromDatabaseName($res->returnVal()->name()));
     }
 
     public function testClassViaInstance()
@@ -102,7 +103,7 @@ class DatabaseTest extends SnippetTestCase
         $snippet = $this->snippetFromClass(Database::class, 1);
         $res = $snippet->invoke('database');
         $this->assertInstanceOf(Database::class, $res->returnVal());
-        $this->assertEquals(self::DATABASE, $res->returnVal()->name());
+        $this->assertEquals(self::DATABASE, DatabaseAdminClient::parseDatabaseFromDatabaseName($res->returnVal()->name()));
     }
 
     public function testName()
@@ -110,7 +111,7 @@ class DatabaseTest extends SnippetTestCase
         $snippet = $this->snippetFromMethod(Database::class, 'name');
         $snippet->addLocal('database', $this->database);
         $res = $snippet->invoke('name');
-        $this->assertEquals(self::DATABASE, $res->returnVal());
+        $this->assertEquals(self::DATABASE, DatabaseAdminClient::parseDatabaseFromDatabaseName($res->returnVal()));
     }
 
     /**
@@ -121,7 +122,7 @@ class DatabaseTest extends SnippetTestCase
         $snippet = $this->snippetFromMethod(Database::class, 'exists');
         $snippet->addLocal('database', $this->database);
 
-        $this->connection->getDatabaseDDL(Argument::any())
+        $this->connection->getDatabase(Argument::any())
             ->shouldBeCalled()
             ->willReturn(['statements' => []]);
 
@@ -134,12 +135,54 @@ class DatabaseTest extends SnippetTestCase
     /**
      * @group spanneradmin
      */
+    public function testInfo()
+    {
+        $db = ['name' => 'foo'];
+
+        $snippet = $this->snippetFromMethod(Database::class, 'info');
+        $snippet->addLocal('database', $this->database);
+
+        $this->connection->getDatabase(Argument::any())
+            ->shouldBeCalledTimes(1)
+            ->willReturn($db);
+
+        $this->database->___setProperty('connection', $this->connection->reveal());
+
+        $res = $snippet->invoke('info');
+        $this->assertEquals($db, $res->returnVal());
+        $snippet->invoke();
+    }
+
+    /**
+     * @group spanneradmin
+     */
+    public function testReload()
+    {
+        $db = ['name' => 'foo'];
+
+        $snippet = $this->snippetFromMethod(Database::class, 'reload');
+        $snippet->addLocal('database', $this->database);
+
+        $this->connection->getDatabase(Argument::any())
+            ->shouldBeCalledTimes(2)
+            ->willReturn($db);
+
+        $this->database->___setProperty('connection', $this->connection->reveal());
+
+        $res = $snippet->invoke('info');
+        $this->assertEquals($db, $res->returnVal());
+        $snippet->invoke();
+    }
+
+    /**
+     * @group spanneradmin
+     */
     public function testUpdateDdl()
     {
         $snippet = $this->snippetFromMethod(Database::class, 'updateDdl');
         $snippet->addLocal('database', $this->database);
 
-        $this->connection->updateDatabase(Argument::any())
+        $this->connection->updateDatabaseDdl(Argument::any())
             ->shouldBeCalled();
 
         $this->database->___setProperty('connection', $this->connection->reveal());
@@ -155,7 +198,7 @@ class DatabaseTest extends SnippetTestCase
         $snippet = $this->snippetFromMethod(Database::class, 'updateDdlBatch');
         $snippet->addLocal('database', $this->database);
 
-        $this->connection->updateDatabase(Argument::any())
+        $this->connection->updateDatabaseDdl(Argument::any())
             ->shouldBeCalled();
 
         $this->database->___setProperty('connection', $this->connection->reveal());

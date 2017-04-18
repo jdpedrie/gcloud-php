@@ -20,15 +20,16 @@ namespace Google\Cloud\Spanner;
 use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Core\Iam\Iam;
-use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Core\LongRunning\LROTrait;
 use Google\Cloud\Core\LongRunning\LongRunningConnectionInterface;
+use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Core\Retry;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\IamDatabase;
 use Google\Cloud\Spanner\Session\Session;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Google\Cloud\Spanner\V1\SpannerClient as GrpcSpannerClient;
+use Google\GAX\ValidationException;
 
 /**
  * Represents a Google Cloud Spanner Database.
@@ -90,6 +91,11 @@ class Database
     private $name;
 
     /**
+     * @var array
+     */
+    private $info;
+
+    /**
      * @var Iam
      */
     private $iam;
@@ -135,7 +141,7 @@ class Database
         $this->lroConnection = $lroConnection;
         $this->lroCallables = $lroCallables;
         $this->projectId = $projectId;
-        $this->name = $name;
+        $this->name = $this->fullyQualifiedDatabaseName($name);
         $this->sessionPool = $sessionPool;
         $this->operation = new Operation($connection, $returnInt64AsObject);
 
@@ -145,7 +151,7 @@ class Database
     }
 
     /**
-     * Return the simple database name.
+     * Return the fully-qualified database name.
      *
      * Example:
      * ```
@@ -157,6 +163,48 @@ class Database
     public function name()
     {
         return $this->name;
+    }
+
+    /**
+     * Get the database info
+     *
+     * Example:
+     * ```
+     * $info = $database->info();
+     * ```
+     *
+     * @codingStandardsIgnoreStart
+     * @see https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.admin.database.v1#google.spanner.admin.database.v1.Database Database
+     * @codingStandardsIgnoreEnd
+     *
+     * @param array $options [optional] Configuration options.
+     * @return array
+     */
+    public function info(array $options = [])
+    {
+        return $this->info ?: $this->reload($options);
+    }
+
+    /**
+     * Reload the database info from the Cloud Spanner API.
+     *
+     * Example:
+     * ```
+     * $info = $database->reload();
+     * ```
+     *
+     * @codingStandardsIgnoreStart
+     * @see https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.admin.database.v1#google.spanner.admin.database.v1.Database Database
+     * @codingStandardsIgnoreEnd
+     *
+     * @param array $options [optional] Configuration options.
+     * @return array
+     */
+    public function reload(array $options = [])
+    {
+        return $this->info = $this->connection->getDatabase([
+            'name' => $this->name
+        ] + $options);
     }
 
     /**
@@ -179,7 +227,7 @@ class Database
     public function exists(array $options = [])
     {
         try {
-            $this->ddl($options);
+            $this->reload($options);
         } catch (NotFoundException $e) {
             return false;
         }
@@ -249,8 +297,8 @@ class Database
      */
     public function updateDdlBatch(array $statements, array $options = [])
     {
-        $operation = $this->connection->updateDatabase($options + [
-            'name' => $this->fullyQualifiedDatabaseName(),
+        $operation = $this->connection->updateDatabaseDdl($options + [
+            'name' => $this->name,
             'statements' => $statements,
         ]);
 
@@ -277,7 +325,7 @@ class Database
     public function drop(array $options = [])
     {
         $this->connection->dropDatabase($options + [
-            'name' => $this->fullyQualifiedDatabaseName()
+            'name' => $this->name
         ]);
     }
 
@@ -301,7 +349,7 @@ class Database
     public function ddl(array $options = [])
     {
         $ddl = $this->connection->getDatabaseDDL($options + [
-            'name' => $this->fullyQualifiedDatabaseName()
+            'name' => $this->name
         ]);
 
         if (isset($ddl['statements'])) {
@@ -326,7 +374,7 @@ class Database
         if (!$this->iam) {
             $this->iam = new Iam(
                 new IamDatabase($this->connection),
-                $this->fullyQualifiedDatabaseName()
+                $this->name
             );
         }
 
@@ -1211,11 +1259,7 @@ class Database
     public function createSession(array $options = [])
     {
         $res = $this->connection->createSession($options + [
-            'database' => GrpcSpannerClient::formatDatabaseName(
-                $this->projectId,
-                $this->instance->name(),
-                $this->name
-            )
+            'database' => $this->name
         ]);
 
         return $this->session($res['name']);
@@ -1302,12 +1346,16 @@ class Database
      *
      * @return string
      */
-    private function fullyQualifiedDatabaseName()
+    private function fullyQualifiedDatabaseName($name)
     {
-        return GrpcSpannerClient::formatDatabaseName(
-            $this->projectId,
-            $this->instance->name(),
-            $this->name
-        );
+        try {
+            return GrpcSpannerClient::formatDatabaseName(
+                $this->projectId,
+                $this->instance->name(),
+                $name
+            );
+        } catch (ValidationException $e) {
+            return $name;
+        }
     }
 }

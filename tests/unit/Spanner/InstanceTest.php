@@ -251,7 +251,7 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
     {
         $database = $this->instance->database('test-database');
         $this->assertInstanceOf(Database::class, $database);
-        $this->assertEquals('test-database', $database->name());
+        $this->assertEquals('test-database', DatabaseAdminClient::parseDatabaseFromDatabaseName($database->name()));
     }
 
     public function testDatabases()
@@ -274,8 +274,8 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
         $dbs = iterator_to_array($dbs);
 
         $this->assertEquals(2, count($dbs));
-        $this->assertEquals('database1', $dbs[0]->name());
-        $this->assertEquals('database2', $dbs[1]->name());
+        $this->assertEquals('database1', DatabaseAdminClient::parseDatabaseFromDatabaseName($dbs[0]->name()));
+        $this->assertEquals('database2', DatabaseAdminClient::parseDatabaseFromDatabaseName($dbs[1]->name()));
     }
 
     public function testDatabasesPaged()
@@ -299,8 +299,8 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
         $dbs = iterator_to_array($dbs);
 
         $this->assertEquals(2, count($dbs));
-        $this->assertEquals('database1', $dbs[0]->name());
-        $this->assertEquals('database2', $dbs[1]->name());
+        $this->assertEquals('database1', DatabaseAdminClient::parseDatabaseFromDatabaseName($dbs[0]->name()));
+        $this->assertEquals('database2', DatabaseAdminClient::parseDatabaseFromDatabaseName($dbs[1]->name()));
     }
 
     public function testIam()

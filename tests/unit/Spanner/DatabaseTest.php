@@ -101,7 +101,7 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
      */
     public function testExists()
     {
-        $this->connection->getDatabaseDDL(Argument::any())
+        $this->connection->getDatabase(Argument::any())
             ->shouldBeCalled()
             ->willReturn([]);
 
@@ -115,7 +115,7 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
      */
     public function testExistsNotFound()
     {
-        $this->connection->getDatabaseDDL(Argument::any())
+        $this->connection->getDatabase(Argument::any())
             ->shouldBeCalled()
             ->willThrow(new NotFoundException('', 404));
 
@@ -130,7 +130,7 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
     public function testUpdateDdl()
     {
         $statement = 'foo';
-        $this->connection->updateDatabase([
+        $this->connection->updateDatabaseDdl([
             'name' => DatabaseAdminClient::formatDatabaseName(self::PROJECT, self::INSTANCE, self::DATABASE),
             'statements' => [$statement]
         ]);
@@ -146,7 +146,7 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
     public function testUpdateDdlBatch()
     {
         $statements = ['foo', 'bar'];
-        $this->connection->updateDatabase([
+        $this->connection->updateDatabaseDdl([
             'name' => DatabaseAdminClient::formatDatabaseName(self::PROJECT, self::INSTANCE, self::DATABASE),
             'statements' => $statements
         ]);
@@ -162,7 +162,7 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
     public function testUpdateWithSingleStatement()
     {
         $statement = 'foo';
-        $this->connection->updateDatabase([
+        $this->connection->updateDatabaseDdl([
             'name' => DatabaseAdminClient::formatDatabaseName(self::PROJECT, self::INSTANCE, self::DATABASE),
             'statements' => ['foo']
         ])->shouldBeCalled()->willReturn(['name' => 'operations/foo']);

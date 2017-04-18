@@ -20,6 +20,7 @@ namespace Google\Cloud\Tests\Spanner;
 use Google\Cloud\Core\Int64;
 use Google\Cloud\Core\Iterator\ItemIterator;
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
+use Google\Cloud\Spanner\Admin\Database\V1\DatabaseAdminClient;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Configuration;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
@@ -225,7 +226,7 @@ class SpannerClientTest extends \PHPUnit_Framework_TestCase
     {
         $database = $this->client->connect(self::INSTANCE, self::DATABASE);
         $this->assertInstanceOf(Database::class, $database);
-        $this->assertEquals(self::DATABASE, $database->name());
+        $this->assertEquals(self::DATABASE, DatabaseAdminClient::parseDatabaseFromDatabaseName($database->name()));
     }
 
     public function testConnectWithInstance()
@@ -233,7 +234,7 @@ class SpannerClientTest extends \PHPUnit_Framework_TestCase
         $inst = $this->client->instance(self::INSTANCE);
         $database = $this->client->connect($inst, self::DATABASE);
         $this->assertInstanceOf(Database::class, $database);
-        $this->assertEquals(self::DATABASE, $database->name());
+        $this->assertEquals(self::DATABASE, DatabaseAdminClient::parseDatabaseFromDatabaseName($database->name()));
     }
 
     public function testKeyset()

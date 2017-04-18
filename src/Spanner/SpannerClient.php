@@ -239,7 +239,6 @@ class SpannerClient
             'displayName' => $name,
             'nodeCount' => self::DEFAULT_NODE_COUNT,
             'labels' => [],
-            'operationName' => null,
         ];
 
         // This must always be set to CREATING, so overwrite anything else.
