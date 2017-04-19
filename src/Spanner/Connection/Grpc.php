@@ -601,8 +601,16 @@ class Grpc implements ConnectionInterface
      */
     public function listOperations(array $args)
     {
-        $name = $this->pluck('name', $args);
-        $method = $this->pluck('method', $args);
+        $name = $this->pluck('name', $args, false) ?: '';
+        $filter = $this->pluck('filter', $args, false) ?: '';
+
+        $client = $this->databaseAdminClient->getOperationsClient();
+
+        return $this->send([$client, 'listOperations'], [
+            $name,
+            $filter,
+            $args
+        ]);
     }
 
     /**

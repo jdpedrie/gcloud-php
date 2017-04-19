@@ -44,6 +44,41 @@ use google\spanner\admin\instance\v1\Instance\State;
  *
  * $instance = $spanner->instance('my-instance');
  * ```
+ *
+ * @method resumeOperation() {
+ *     Resume a Long Running Operation
+ *
+ *     Example:
+ *     ```
+ *     $operation = $instance->resumeOperation($operationName);
+ *     ```
+ *
+ *     @param string $operationName The Long Running Operation name.
+ *     @param array $info [optional] The operation data.
+ *     @return LongRunningOperation
+ * }
+ * @method longRunningOperations() {
+ *     List long running operations.
+ *
+ *     Example:
+ *     ```
+ *     $operations = $instance->longRunningOperations();
+ *     ```
+ *
+ *     @param array $options [optional] {
+ *         Configuration Options.
+ *
+ *         @type string $name The name of the operation collection.
+ *         @type string $filter The standard list filter.
+ *         @type int $pageSize Maximum number of results to return per
+ *               request.
+ *         @type int $resultLimit Limit the number of results returned in total.
+ *               **Defaults to** `0` (return all results).
+ *         @type string $pageToken A previously-returned page token used to
+ *               resume the loading of results from a specific point.
+ *     }
+ *     @return ItemIterator<InstanceConfiguration>
+ * }
  */
 class Instance
 {
@@ -59,16 +94,6 @@ class Instance
      * @var ConnectionInterface
      */
     private $connection;
-
-    /**
-     * @var LongRunningConnectionInterface
-     */
-    private $lroConnection;
-
-    /**
-     * @var array
-     */
-    private $lroCallables;
 
     /**
      * @var string
@@ -120,12 +145,12 @@ class Instance
         array $info = []
     ) {
         $this->connection = $connection;
-        $this->lroConnection = $lroConnection;
-        $this->lroCallables = $lroCallables;
         $this->projectId = $projectId;
         $this->name = $this->fullyQualifiedInstanceName($name, $projectId);
         $this->returnInt64AsObject = $returnInt64AsObject;
         $this->info = $info;
+
+        $this->setLroProperties($lroConnection, $lroCallables, $this->name);
     }
 
     /**
@@ -259,7 +284,7 @@ class Instance
             'config' => $config->name()
         ] + $options);
 
-        return $this->lro($this->lroConnection, $operation['name'], $this->lroCallables);
+        return $this->resumeOperation($operation['name'], $operation);
     }
 
     /**
@@ -332,7 +357,7 @@ class Instance
             'name' => $this->name,
         ] + $options);
 
-        return $this->lro($this->lroConnection, $operation['name'], $this->lroCallables);
+        return $this->resumeOperation($operation['name'], $operation);
     }
 
     /**

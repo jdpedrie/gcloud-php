@@ -159,7 +159,9 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
             'displayName' => $instance['displayName'],
             'nodeCount' => $instance['nodeCount'],
             'labels' => [],
-        ])->shouldBeCalled();
+        ])->shouldBeCalled()->willReturn([
+            'name' => 'my-operation'
+        ]);
 
         $this->instance->___setProperty('connection', $this->connection->reveal());
 
@@ -180,7 +182,9 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
             'displayName' => $instance['displayName'],
             'nodeCount' => $instance['nodeCount'],
             'labels' => $instance['labels'],
-        ])->shouldBeCalled();
+        ])->shouldBeCalled()->willReturn([
+            'name' => 'my-operation'
+        ]);
 
         $this->instance->___setProperty('connection', $this->connection->reveal());
 
@@ -208,7 +212,9 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
             'displayName' => $changes['displayName'],
             'nodeCount' => $changes['nodeCount'],
             'labels' => $changes['labels'],
-        ])->shouldBeCalled();
+        ])->shouldBeCalled()->willReturn([
+            'name' => 'my-operation'
+        ]);
 
         $this->instance->___setProperty('connection', $this->connection->reveal());
 

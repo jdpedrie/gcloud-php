@@ -177,6 +177,8 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
         $this->connection->updateDatabaseDdl([
             'name' => DatabaseAdminClient::formatDatabaseName(self::PROJECT, self::INSTANCE, self::DATABASE),
             'statements' => [$statement]
+        ])->willReturn([
+            'name' => 'my-operation'
         ]);
 
         $this->database->___setProperty('connection', $this->connection->reveal());
@@ -193,11 +195,13 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
         $this->connection->updateDatabaseDdl([
             'name' => DatabaseAdminClient::formatDatabaseName(self::PROJECT, self::INSTANCE, self::DATABASE),
             'statements' => $statements
+        ])->willReturn([
+            'name' => 'my-operation'
         ]);
 
         $this->database->___setProperty('connection', $this->connection->reveal());
 
-        $this->database->updateDdl($statements);
+        $this->database->updateDdlBatch($statements);
     }
 
     /**

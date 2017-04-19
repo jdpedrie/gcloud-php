@@ -44,6 +44,19 @@ use Psr\Http\StreamInterface;
  *
  * $spanner = new SpannerClient();
  * ```
+ *
+ * @method resumeOperation() {
+ *     Resume a Long Running Operation
+ *
+ *     Example:
+ *     ```
+ *     $operation = $spanner->resumeOperation($operationName);
+ *     ```
+ *
+ *     @param string $operationName The Long Running Operation name.
+ *     @param array $info [optional] The operation data.
+ *     @return LongRunningOperation
+ * }
  */
 class SpannerClient
 {
@@ -61,11 +74,6 @@ class SpannerClient
      * @var ConnectionInterface
      */
     protected $connection;
-
-    /**
-     * @var LongRunningConnectionInterface
-     */
-    private $lroConnection;
 
     /**
      * @var bool
@@ -109,9 +117,9 @@ class SpannerClient
         ];
 
         $this->connection = new Grpc($this->configureAuthentication($config));
-        $this->lroConnection = new LongRunningConnection($this->connection);
         $this->returnInt64AsObject = $config['returnInt64AsObject'];
-        $this->lroCallables = [
+
+        $this->setLroProperties(new LongRunningConnection($this->connection), [
             [
                 'typeUrl' => 'type.googleapis.com/google.spanner.admin.instance.v1.UpdateInstanceMetadata',
                 'callable' => function ($instance) {
@@ -134,7 +142,7 @@ class SpannerClient
                     return $this->instance($name, $instance);
                 }
             ]
-        ];
+        ]);
     }
 
     /**
@@ -485,21 +493,5 @@ class SpannerClient
     public function duration($seconds, $nanos = 0)
     {
         return new Duration($seconds, $nanos);
-    }
-
-    /**
-     * Resume a Long Running Operation
-     *
-     * Example:
-     * ```
-     * $operation = $spanner->resumeOperation($operationName);
-     * ```
-     *
-     * @param string $operationName The Long Running Operation name.
-     * @return LongRunningOperation
-     */
-    public function resumeOperation($operationName)
-    {
-        return $this->lro($this->lroConnection, $operationName, $this->lroCallables);
     }
 }

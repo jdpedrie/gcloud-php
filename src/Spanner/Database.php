@@ -54,6 +54,41 @@ use Google\GAX\ValidationException;
  * $instance = $spanner->instance('my-instance');
  * $database = $instance->database('my-database');
  * ```
+ *
+ * @method resumeOperation() {
+ *     Resume a Long Running Operation
+ *
+ *     Example:
+ *     ```
+ *     $operation = $database->resumeOperation($operationName);
+ *     ```
+ *
+ *     @param string $operationName The Long Running Operation name.
+ *     @param array $info [optional] The operation data.
+ *     @return LongRunningOperation
+ * }
+ * @method longRunningOperations() {
+ *     List long running operations.
+ *
+ *     Example:
+ *     ```
+ *     $operations = $database->longRunningOperations();
+ *     ```
+ *
+ *     @param array $options [optional] {
+ *         Configuration Options.
+ *
+ *         @type string $name The name of the operation collection.
+ *         @type string $filter The standard list filter.
+ *         @type int $pageSize Maximum number of results to return per
+ *               request.
+ *         @type int $resultLimit Limit the number of results returned in total.
+ *               **Defaults to** `0` (return all results).
+ *         @type string $pageToken A previously-returned page token used to
+ *               resume the loading of results from a specific point.
+ *     }
+ *     @return ItemIterator<InstanceConfiguration>
+ * }
  */
 class Database
 {
@@ -71,11 +106,6 @@ class Database
      * @var Instance
      */
     private $instance;
-
-    /**
-     * @var LongRunningConnectionInterface
-     */
-    private $lroConnection;
 
     /**
      * @var Operation
@@ -140,8 +170,6 @@ class Database
     ) {
         $this->connection = $connection;
         $this->instance = $instance;
-        $this->lroConnection = $lroConnection;
-        $this->lroCallables = $lroCallables;
         $this->projectId = $projectId;
         $this->name = $this->fullyQualifiedDatabaseName($name);
         $this->sessionPool = $sessionPool;
@@ -150,6 +178,8 @@ class Database
         if ($this->sessionPool) {
             $this->sessionPool->setDatabase($this);
         }
+
+        $this->setLroProperties($lroConnection, $lroCallables, $this->name);
     }
 
     /**
@@ -270,7 +300,7 @@ class Database
             'extraStatements' => $options['statements']
         ]);
 
-        return $this->lro($this->lroConnection, $operation['name'], $this->lroCallables);
+        return $this->resumeOperation($operation['name'], $operation);
     }
 
     /**
@@ -340,7 +370,7 @@ class Database
             'statements' => $statements,
         ]);
 
-        return $this->lro($this->lroConnection, $operation['name'], $this->lroCallables);
+        return $this->resumeOperation($operation['name'], $operation);
     }
 
     /**

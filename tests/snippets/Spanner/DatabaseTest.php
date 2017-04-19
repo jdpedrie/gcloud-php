@@ -18,6 +18,7 @@
 namespace Google\Cloud\Tests\Snippets\Spanner;
 
 use Google\Cloud\Core\Iam\Iam;
+use Google\Cloud\Core\Iterator\ItemIterator;
 use Google\Cloud\Core\LongRunning\LongRunningConnectionInterface;
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Dev\Snippet\SnippetTestCase;
@@ -72,7 +73,7 @@ class DatabaseTest extends SnippetTestCase
             self::PROJECT,
             self::DATABASE,
             $sessionPool->reveal()
-        ], ['connection', 'operation']);
+        ], ['connection', 'operation', 'lroConnection']);
     }
 
     private function stubOperation()
@@ -185,7 +186,10 @@ class DatabaseTest extends SnippetTestCase
         $snippet->addLocal('database', $this->database);
 
         $this->connection->createDatabase(Argument::any())
-            ->shouldBeCalled();
+            ->shouldBeCalled()
+            ->willReturn([
+                'name' => 'my-operation'
+            ]);
 
         $this->database->___setProperty('connection', $this->connection->reveal());
 
@@ -202,7 +206,10 @@ class DatabaseTest extends SnippetTestCase
         $snippet->addLocal('database', $this->database);
 
         $this->connection->updateDatabaseDdl(Argument::any())
-            ->shouldBeCalled();
+            ->shouldBeCalled()
+            ->willReturn([
+                'name' => 'my-operation'
+            ]);
 
         $this->database->___setProperty('connection', $this->connection->reveal());
 
@@ -218,7 +225,10 @@ class DatabaseTest extends SnippetTestCase
         $snippet->addLocal('database', $this->database);
 
         $this->connection->updateDatabaseDdl(Argument::any())
-            ->shouldBeCalled();
+            ->shouldBeCalled()
+            ->willReturn([
+                'name' => 'my-operation'
+            ]);
 
         $this->database->___setProperty('connection', $this->connection->reveal());
 
@@ -772,6 +782,40 @@ class DatabaseTest extends SnippetTestCase
 
         $res = $snippet->invoke('iam');
         $this->assertInstanceOf(Iam::class, $res->returnVal());
+    }
+
+    public function testResumeOperation()
+    {
+        $snippet = $this->snippetFromMagicMethod(Database::class, 'resumeOperation');
+        $snippet->addLocal('database', $this->database);
+        $snippet->addLocal('operationName', 'foo');
+
+        $res = $snippet->invoke('operation');
+        $this->assertInstanceOf(LongRunningOperation::class, $res->returnVal());
+        $this->assertEquals('foo', $res->returnVal()->name());
+    }
+
+    public function testLongRunningOperations()
+    {
+        $snippet = $this->snippetFromMethod(Database::class, 'longRunningOperations');
+        $snippet->addLocal('database', $this->database);
+
+        $lroConnection = $this->prophesize(LongRunningConnectionInterface::class);
+        $lroConnection->operations(Argument::any())
+            ->shouldBeCalled()
+            ->willReturn([
+                'operations' => [
+                    [
+                        'name' => 'foo'
+                    ]
+                ]
+            ]);
+
+        $this->database->___setProperty('lroConnection', $lroConnection->reveal());
+
+        $res = $snippet->invoke('operations');
+        $this->assertInstanceOf(ItemIterator::class, $res->returnVal());
+        $this->assertContainsOnlyInstancesOf(LongRunningOperation::class, $res->returnVal());
     }
 
     private function resultGenerator(array $data)

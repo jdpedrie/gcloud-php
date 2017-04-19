@@ -29,7 +29,7 @@ class AbortedException extends ServiceException
      */
     public function getRetryDelay()
     {
-        $metadata = array_filter($this->options, function ($metadataItem) {
+        $metadata = array_filter($this->metadata, function ($metadataItem) {
             if (array_key_exists('retryDelay', $metadataItem)) {
                 return true;
             }

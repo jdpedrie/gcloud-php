@@ -259,7 +259,7 @@ class SpannerClientTest extends SnippetTestCase
 
     public function testResumeOperation()
     {
-        $snippet = $this->snippetFromMethod(SpannerClient::class, 'resumeOperation');
+        $snippet = $this->snippetFromMagicMethod(SpannerClient::class, 'resumeOperation');
         $snippet->addLocal('spanner', $this->client);
         $snippet->addLocal('operationName', 'operations/foo');
 

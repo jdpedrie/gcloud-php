@@ -75,7 +75,8 @@ class GrpcRequestWrapper
      * @var array Map of error metadata types to RPC wrappers.
      */
     private $metadataTypes = [
-        'google.rpc.retryinfo-bin' => \google\rpc\RetryInfo::class
+        'google.rpc.retryinfo-bin' => \google\rpc\RetryInfo::class,
+        'google.rpc.badrequest-bin' => \google\rpc\BadRequest::class
     ];
 
     /**
