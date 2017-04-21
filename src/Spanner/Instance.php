@@ -343,16 +343,6 @@ class Instance
      */
     public function update(array $options = [])
     {
-        $info = $this->info($options);
-
-        $options += [
-            'displayName' => $info['displayName'],
-            'nodeCount' => (isset($info['nodeCount'])) ? $info['nodeCount'] : null,
-            'labels' => (isset($info['labels']))
-                ? $info['labels']
-                : []
-        ];
-
         $operation = $this->connection->updateInstance([
             'name' => $this->name,
         ] + $options);

@@ -662,13 +662,18 @@ class Grpc implements ConnectionInterface
      */
     private function instanceObject(array &$args, $required = false)
     {
+        $labels = null;
+        if (isset($args['labels'])) {
+            $labels = $this->formatLabelsForApi($this->pluck('labels', $args, $required));
+        }
+
         return (new Instance())->deserialize(array_filter([
             'name' => $this->pluck('name', $args, $required),
             'config' => $this->pluck('config', $args, $required),
             'displayName' => $this->pluck('displayName', $args, $required),
             'nodeCount' => $this->pluck('nodeCount', $args, $required),
             'state' => $this->pluck('state', $args, $required),
-            'labels' => $this->formatLabelsForApi($this->pluck('labels', $args, $required))
+            'labels' => $labels
         ]), $this->codec);
     }
 }

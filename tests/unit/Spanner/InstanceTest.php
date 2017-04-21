@@ -150,22 +150,16 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
     {
         $instance = $this->getDefaultInstance();
 
-        $this->connection->getInstance(Argument::any())
-            ->shouldBeCalledTimes(1)
-            ->willReturn($instance);
-
         $this->connection->updateInstance([
+            'displayName' => 'bar',
             'name' => $instance['name'],
-            'displayName' => $instance['displayName'],
-            'nodeCount' => $instance['nodeCount'],
-            'labels' => [],
         ])->shouldBeCalled()->willReturn([
             'name' => 'my-operation'
         ]);
 
         $this->instance->___setProperty('connection', $this->connection->reveal());
 
-        $this->instance->update();
+        $this->instance->update(['displayName' => 'bar']);
     }
 
     public function testUpdateWithExistingLabels()
@@ -173,22 +167,16 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
         $instance = $this->getDefaultInstance();
         $instance['labels'] = ['foo' => 'bar'];
 
-        $this->connection->getInstance(Argument::any())
-            ->shouldBeCalledTimes(1)
-            ->willReturn($instance);
-
         $this->connection->updateInstance([
-            'name' => $instance['name'],
-            'displayName' => $instance['displayName'],
-            'nodeCount' => $instance['nodeCount'],
             'labels' => $instance['labels'],
+            'name' => $instance['name'],
         ])->shouldBeCalled()->willReturn([
             'name' => 'my-operation'
         ]);
 
         $this->instance->___setProperty('connection', $this->connection->reveal());
 
-        $this->instance->update();
+        $this->instance->update(['labels' => $instance['labels']]);
     }
 
     public function testUpdateWithChanges()
@@ -202,10 +190,6 @@ class InstanceTest extends \PHPUnit_Framework_TestCase
             'nodeCount' => 900,
             'displayName' => 'New Name',
         ];
-
-        $this->connection->getInstance(Argument::any())
-            ->shouldBeCalledTimes(1)
-            ->willReturn($instance);
 
         $this->connection->updateInstance([
             'name' => $instance['name'],

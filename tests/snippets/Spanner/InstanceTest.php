@@ -165,13 +165,6 @@ class InstanceTest extends SnippetTestCase
         $snippet = $this->snippetFromMethod(Instance::class, 'update');
         $snippet->addLocal('instance', $this->instance);
 
-        $this->connection->getInstance(Argument::any())
-            ->shouldBeCalledTimes(1)
-            ->willReturn([
-                'displayName' => 'foo',
-                'nodeCount' => 1
-            ]);
-
         $this->connection->updateInstance(Argument::any())
             ->shouldBeCalled()
             ->willReturn([
