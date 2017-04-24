@@ -535,12 +535,6 @@ class Database
      * it is important that every transaction commits or rolls back as early as
      * possible. Do not hold transactions open longer than necessary.
      *
-     * If you have an active transaction which was obtained from elsewhere, you
-     * can provide it to this method and gain the benefits of managed retry by
-     * setting `$options.transaction` to your {@see Google\Cloud\Spanner\Transaction}
-     * instance. Please note that in this case, it is important that ALL reads
-     * and mutations MUST be performed within the runTransaction callable.
-     *
      * Example:
      * ```
      * $transaction = $database->runTransaction(function (Transaction $t) use ($username, $password) {
@@ -578,9 +572,6 @@ class Database
      *
      *     @type int $maxRetries The number of times to attempt to apply the
      *           operation before failing. **Defaults to ** `3`.
-     *     @type Transaction $transaction If provided, the transaction will be
-     *           passed to the callable instead of attempting to begin a new
-     *           transaction.
      * }
      * @return mixed The return value of `$operation`.
      */
@@ -598,13 +589,7 @@ class Database
 
         $attempt = 0;
         $startTransactionFn = function ($session, $options) use (&$attempt) {
-            if ($attempt === 0 && $options['transaction'] instanceof Transaction) {
-                $transaction = $options['transaction'];
-            } elseif ($attempt === 0 && $options['transaction']) {
-                throw new \InvalidArgumentException('Given transaction must be an instance of Transaction.');
-            } else {
-                $transaction = $this->operation->transaction($session, $options);
-            }
+            $transaction = $this->operation->transaction($session, $options);
 
             $attempt++;
             return $transaction;

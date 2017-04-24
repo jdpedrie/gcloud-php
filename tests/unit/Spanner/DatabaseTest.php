@@ -357,8 +357,8 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
         $abort = new AbortedException('foo', 409, null, [
             [
                 'retryDelay' => [
-                    'seconds' => 1,
-                    'nanos' => 0
+                    'seconds' => 0,
+                    'nanos' => 500
                 ]
             ]
         ]);
