@@ -56,6 +56,15 @@ class DateTest extends SnippetTestCase
         $this->assertEquals($this->date->formatAsString(), $res->output());
     }
 
+    public function testCreateFromValues()
+    {
+        $snippet = $this->snippetFromMethod(Date::class, 'createFromValues');
+        $snippet->addUse(Date::class);
+
+        $res = $snippet->invoke('date');
+        $this->assertEquals('1995-02-04', $res->returnVal()->formatAsString());
+    }
+
     public function testGet()
     {
         $snippet = $this->snippetFromMethod(Date::class, 'get');

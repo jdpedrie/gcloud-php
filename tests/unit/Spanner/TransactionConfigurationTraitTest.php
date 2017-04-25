@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\Cloud\Tests\Spanner;
+namespace Google\Cloud\Tests\Unit\Spanner;
 
 use Google\Cloud\Spanner\Duration;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
@@ -48,15 +48,15 @@ class TransactionConfigurationTraitTest extends \PHPUnit_Framework_TestCase
     {
         $args = [];
         $res = $this->impl->proxyTransactionSelector($args);
-        $this->assertEquals(SessionPoolInterface::CONTEXT_READ, $res[1]);
-        $this->assertTrue($res[0]['singleUse']['readOnly']['strong']);
+        $this->assertEquals(SessionPoolInterface::CONTEXT_READWRITE, $res[1]);
+        $this->assertEmpty($res[0]['singleUse']['readWrite']);
     }
 
     public function testTransactionSelectorExistingId()
     {
         $args = ['transactionId' => self::TRANSACTION];
         $res = $this->impl->proxyTransactionSelector($args);
-        $this->assertEquals(SessionPoolInterface::CONTEXT_READ, $res[1]);
+        $this->assertEquals(SessionPoolInterface::CONTEXT_READWRITE, $res[1]);
         $this->assertEquals(self::TRANSACTION, $res[0]['id']);
     }
 
@@ -68,12 +68,19 @@ class TransactionConfigurationTraitTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($this->impl->proxyConfigureTransactionOptions(), $res[0]['singleUse']);
     }
 
+    public function testTransactionSelectorReadOnly()
+    {
+        $args = ['transactionType' => SessionPoolInterface::CONTEXT_READ];
+        $res = $this->impl->proxyTransactionSelector($args);
+        $this->assertEquals(SessionPoolInterface::CONTEXT_READ, $res[1]);
+    }
+
     public function testBegin()
     {
         $args = ['begin' => true];
         $res = $this->impl->proxyTransactionSelector($args);
-        $this->assertEquals(SessionPoolInterface::CONTEXT_READ, $res[1]);
-        $this->assertTrue($res[0]['begin']['readOnly']['strong']);
+        $this->assertEquals(SessionPoolInterface::CONTEXT_READWRITE, $res[1]);
+        $this->assertEmpty($res[0]['begin']['readWrite']);
     }
 
     public function testConfigureSnapshotOptionsReturnReadTimestamp()
