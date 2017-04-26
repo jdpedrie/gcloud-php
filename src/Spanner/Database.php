@@ -493,6 +493,10 @@ class Database
      *           timestamp.
      *     @type Duration $exactStaleness Represents a number of seconds. Executes
      *           all reads at a timestamp that is $exactStaleness old.
+     *     @type bool $singleUse If true, a Transaction ID will not be allocated
+     *           up front. Instead, the transaction will be considered
+     *           "single-use", and may be used for only a single operation.
+     *           **Defaults to** `false`.
      * }
      * @return Snapshot
      * @codingStandardsIgnoreEnd
@@ -511,7 +515,7 @@ class Database
         $session = $this->selectSession(SessionPoolInterface::CONTEXT_READ);
 
         try {
-            return $this->operation->snapshot($session, $transactionOptions);
+            return $this->operation->snapshot($session, $transactionOptions, $options);
         } finally {
             $session->setExpiration();
         }
@@ -572,6 +576,12 @@ class Database
      *
      *     @type int $maxRetries The number of times to attempt to apply the
      *           operation before failing. **Defaults to ** `3`.
+     *     @type bool $singleUse If true, a Transaction ID will not be allocated
+     *           up front. Instead, the transaction will be considered
+     *           "single-use", and may be used for only a single operation. Note
+     *           that in a single-use transaction, only a single operation may
+     *           be executed, and rollback is not available. **Defaults to**
+     *           `false`.
      * }
      * @return mixed The return value of `$operation`.
      */
@@ -579,7 +589,6 @@ class Database
     {
         $options += [
             'maxRetries' => self::MAX_RETRIES,
-            'transaction' => null
         ];
 
         // There isn't anything configurable here.
@@ -647,7 +656,14 @@ class Database
      * @see https://cloud.google.com/spanner/docs/transactions Transactions
      * @codingStandardsIgnoreEnd
      *
-     * @param array $options [optional] Configuration Options.
+     * @param array $options [optional] {
+     *     Configuration Options.
+     *
+     *     @type bool $singleUse If true, a Transaction ID will not be allocated
+     *           up front. Instead, the transaction will be considered
+     *           "single-use", and may be used for only a single operation.
+     *           **Defaults to** `false`.
+     * }
      * @return Transaction
      */
     public function transaction(array $options = [])
@@ -730,15 +746,7 @@ class Database
             $mutations[] = $this->operation->mutation(Operation::OP_INSERT, $table, $data);
         }
 
-        $session = $this->selectSession(SessionPoolInterface::CONTEXT_READWRITE);
-
-        $options['singleUseTransaction'] = $this->configureTransactionOptions();
-
-        try {
-            return $this->operation->commit($session, $mutations, $options);
-        } finally {
-            $session->setExpiration();
-        }
+        return $this->commitInSingleUseTransaction($mutations, $options);
     }
 
     /**
@@ -810,15 +818,7 @@ class Database
             $mutations[] = $this->operation->mutation(Operation::OP_UPDATE, $table, $data);
         }
 
-        $session = $this->selectSession(SessionPoolInterface::CONTEXT_READWRITE);
-
-        $options['singleUseTransaction'] = $this->configureTransactionOptions();
-
-        try {
-            return $this->operation->commit($session, $mutations, $options);
-        } finally {
-            $session->setExpiration();
-        }
+        return $this->commitInSingleUseTransaction($mutations, $options);
     }
 
     /**
@@ -893,15 +893,7 @@ class Database
             $mutations[] = $this->operation->mutation(Operation::OP_INSERT_OR_UPDATE, $table, $data);
         }
 
-        $session = $this->selectSession(SessionPoolInterface::CONTEXT_READWRITE);
-
-        $options['singleUseTransaction'] = $this->configureTransactionOptions();
-
-        try {
-            return $this->operation->commit($session, $mutations, $options);
-        } finally {
-            $session->setExpiration();
-        }
+        return $this->commitInSingleUseTransaction($mutations, $options);
     }
 
     /**
@@ -976,15 +968,7 @@ class Database
             $mutations[] = $this->operation->mutation(Operation::OP_REPLACE, $table, $data);
         }
 
-        $session = $this->selectSession(SessionPoolInterface::CONTEXT_READWRITE);
-
-        $options['singleUseTransaction'] = $this->configureTransactionOptions();
-
-        try {
-            return $this->operation->commit($session, $mutations, $options);
-        } finally {
-            $session->setExpiration();
-        }
+        return $this->commitInSingleUseTransaction($mutations, $options);
     }
 
     /**
@@ -1016,15 +1000,7 @@ class Database
     {
         $mutations = [$this->operation->deleteMutation($table, $keySet)];
 
-        $session = $this->selectSession(SessionPoolInterface::CONTEXT_READWRITE);
-
-        $options['singleUseTransaction'] = $this->configureTransactionOptions();
-
-        try {
-            return $this->operation->commit($session, $mutations, $options);
-        } finally {
-            $session->setExpiration();
-        }
+        return $this->commitInSingleUseTransaction($mutations, $options);
     }
 
     /**
@@ -1049,7 +1025,8 @@ class Database
      *      'parameters' => [
      *         'postId' => 1337
      *     ],
-     *     'begin' => true
+     *     'begin' => true,
+     *     'transactionType' => SessionPoolInterface::CONTEXT_READ
      * ]);
      *
      * $result->rows()->current();
@@ -1113,7 +1090,7 @@ class Database
      *           or `SessionPoolInterface::CONTEXT_READWRITE`. If read/write is
      *           chosen, any snapshot options will be disregarded. If `$begin`
      *           is false, this option will be ignored. **Defaults to**
-     *           `SessionPoolInterface::CONTEXT_READ`.
+     *           `SessionPoolInterface::CONTEXT_READWRITE`.
      * }
      * @codingStandardsIgnoreEnd
      * @return Result
@@ -1160,7 +1137,8 @@ class Database
      * $columns = ['ID', 'title', 'content'];
      *
      * $result = $database->read('Posts', $keySet, $columns, [
-     *     'begin' => true
+     *     'begin' => true,
+     *     'transactionType' => SessionPoolInterface::CONTEXT_READ
      * ]);
      *
      * $result->rows()->current();
@@ -1392,6 +1370,17 @@ class Database
         } else {
             return $this->session = $this->createSession();
         }
+    }
+
+    private function commitInSingleUseTransaction(array $mutations, array $options = [])
+    {
+        $options['mutations'] = $mutations;
+
+        return $this->runTransaction(function (Transaction $t) use ($options) {
+            return $t->commit($options);
+        }, [
+            'singleUse' => true
+        ]);
     }
 
     /**

@@ -619,7 +619,8 @@ class Grpc implements ConnectionInterface
      */
     private function formatKeySet(array $keySet)
     {
-        if (isset($keySet['keys'])) {
+        $keys = $this->pluck('keys', $keySet, false);
+        if ($keys) {
             $keySet['keys'] = $this->formatListForApi($keySet['keys']);
         }
 

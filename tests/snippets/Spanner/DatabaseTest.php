@@ -619,6 +619,7 @@ class DatabaseTest extends SnippetTestCase
 
         $snippet = $this->snippetFromMethod(Database::class, 'execute', 1);
         $snippet->addLocal('database', $this->database);
+        $snippet->addUse(SessionPoolInterface::class);
 
         $res = $snippet->invoke('result');
         $this->assertInstanceOf(Result::class, $res->returnVal());
@@ -717,6 +718,7 @@ class DatabaseTest extends SnippetTestCase
         $snippet = $this->snippetFromMethod(Database::class, 'read', 1);
         $snippet->addLocal('database', $this->database);
         $snippet->addUse(KeySet::class);
+        $snippet->addUse(SessionPoolInterface::class);
 
         $res = $snippet->invoke('result');
         $this->assertInstanceOf(Result::class, $res->returnVal());

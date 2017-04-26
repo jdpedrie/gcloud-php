@@ -21,7 +21,7 @@ use Google\Cloud\Core\ArrayTrait;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 
 /**
- * Manage shared transaction configuration.
+ * Configure transaction selection for read, executeSql, rollback and commit.
  */
 trait TransactionConfigurationTrait
 {
@@ -34,13 +34,40 @@ trait TransactionConfigurationTrait
      * or read/write.
      *
      * @param array $options call options.
-     * @return array
+     * @return array [(array) transaction selector, (string) context]
      */
     private function transactionSelector(array &$options)
     {
+        $options = $this->transactionOptions($options);
+
+        // TransactionSelector uses a different key name for singleUseTransaction
+        // and transactionId than transactionOptions, so we'll rewrite those here
+        // so transactionOptions works as expected for commitRequest.
+
+        $type = $options[1];
+        if ($type === 'singleUseTransaction') {
+            $type = 'singleUse';
+        } elseif ($type === 'transactionId') {
+            $type = 'id';
+        }
+
+        return [
+            [$type => $options[0]],
+            $options[2]
+        ];
+    }
+
+    /**
+     * Return transaction options based on given configuration options.
+     *
+     * @param array $options call options.
+     * @return array [(array) transaction options, (string) transaction type, (string) context]
+     */
+    private function transactionOptions(array &$options)
+    {
         $options += [
             'begin' => false,
-            'transactionType' => SessionPoolInterface::CONTEXT_READ,
+            'transactionType' => SessionPoolInterface::CONTEXT_READWRITE,
             'transactionId' => null
         ];
 
@@ -48,8 +75,9 @@ trait TransactionConfigurationTrait
 
         $context = $this->pluck('transactionType', $options);
         $id = $this->pluck('transactionId', $options);
+
         if (!is_null($id)) {
-            $type = 'id';
+            $type = 'transactionId';
             $transactionOptions = $id;
         } elseif ($context === SessionPoolInterface::CONTEXT_READ) {
             $transactionOptions = $this->configureSnapshotOptions($options);
@@ -64,13 +92,10 @@ trait TransactionConfigurationTrait
 
         $begin = $this->pluck('begin', $options);
         if (is_null($type)) {
-            $type = ($begin) ? 'begin' : 'singleUse';
+            $type = ($begin) ? 'begin' : 'singleUseTransaction';
         }
 
-        return [
-            [$type => $transactionOptions],
-            $context
-        ];
+        return [$transactionOptions, $type, $context];
     }
 
     private function configureTransactionOptions()

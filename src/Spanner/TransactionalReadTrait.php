@@ -20,7 +20,7 @@ namespace Google\Cloud\Spanner;
 /**
  * Shared methods for reads inside a transaction.
  */
-trait TransactionReadTrait
+trait TransactionalReadTrait
 {
     use TransactionConfigurationTrait;
 
@@ -45,6 +45,16 @@ trait TransactionReadTrait
     private $context;
 
     /**
+     * @var int
+     */
+    private $type;
+
+    /**
+     * @var int
+     */
+    private $state = self::STATE_ACTIVE;
+
+    /**
      * Run a query.
      *
      * @param string $sql The query string to execute.
@@ -59,12 +69,13 @@ trait TransactionReadTrait
      */
     public function execute($sql, array $options = [])
     {
-        $options['transactionType'] = $this->context;
-        $options['transactionId'] = $this->transactionId;
+        $this->singleUseState();
 
-        list($transactionOptions, $context) = $this->transactionSelector($options);
-        $options['transaction'] = $transactionOptions;
-        $options['transactionContext'] = $context;
+        $options['transactionId'] = $this->transactionId;
+        $options['transactionType'] = $this->context;
+        $selector = $this->transactionSelector($options);
+
+        $options['transaction'] = $selector[0];
 
         return $this->operation->execute($this->session, $sql, $options);
     }
@@ -86,12 +97,13 @@ trait TransactionReadTrait
      */
     public function read($table, KeySet $keySet, array $columns, array $options = [])
     {
-        $options['transactionType'] = $this->context;
-        $options['transactionId'] = $this->transactionId;
+        $this->singleUseState();
 
-        list($transactionOptions, $context) = $this->transactionSelector($options);
-        $options['transaction'] = $transactionOptions;
-        $options['transactionContext'] = $context;
+        $options['transactionId'] = $this->transactionId;
+        $options['transactionType'] = $this->context;
+        $selector = $this->transactionSelector($options);
+
+        $options['transaction'] = $selector[0];
 
         return $this->operation->read($this->session, $table, $keySet, $columns, $options);
     }
@@ -99,10 +111,41 @@ trait TransactionReadTrait
     /**
      * Retrieve the Transaction ID.
      *
-     * @return string
+     * @return string|null
      */
     public function id()
     {
         return $this->transactionId;
+    }
+
+    /**
+     * Get the Transaction Type.
+     *
+     * @return int
+     */
+    public function type()
+    {
+        return $this->type;
+    }
+
+    /**
+     * Check the transaction state, and update as necessary for single-use transactions.
+     *
+     * @return bool true if transaction is single use, false otherwise.
+     * @throws \BadMethodCallException
+     */
+    private function singleUseState()
+    {
+        if ($this->type === self::TYPE_SINGLE_USE) {
+            if ($this->state === self::STATE_SINGLE_USE_USED) {
+                throw new \BadMethodCallException('This single-use transaction has already been used.');
+            }
+
+            $this->state = self::STATE_SINGLE_USE_USED;
+
+            return true;
+        }
+
+        return false;
     }
 }

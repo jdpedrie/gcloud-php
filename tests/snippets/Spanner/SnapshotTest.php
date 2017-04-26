@@ -49,8 +49,10 @@ class SnapshotTest extends SnippetTestCase
         $this->snapshot = \Google\Cloud\Dev\stub(Snapshot::class, [
             $operation->reveal(),
             $session->reveal(),
-            self::TRANSACTION,
-            new Timestamp(new \DateTime)
+            [
+                'id' => self::TRANSACTION,
+                'readTimestamp' => new Timestamp(new \DateTime)
+            ]
         ], ['operation']);
     }
 
