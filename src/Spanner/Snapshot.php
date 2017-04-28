@@ -149,6 +149,7 @@ class Snapshot implements TransactionalReadInterface
             : self::TYPE_SINGLE_USE;
 
         $this->context = SessionPoolInterface::CONTEXT_READ;
+        $this->options = $options;
     }
 
     /**

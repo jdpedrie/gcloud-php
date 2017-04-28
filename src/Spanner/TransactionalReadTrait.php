@@ -17,6 +17,8 @@
 
 namespace Google\Cloud\Spanner;
 
+use Google\Cloud\Spanner\Session\SessionPoolInterface;
+
 /**
  * Shared methods for reads inside a transaction.
  */
@@ -55,6 +57,11 @@ trait TransactionalReadTrait
     private $state = self::STATE_ACTIVE;
 
     /**
+     * @var array
+     */
+    private $options = [];
+
+    /**
      * Run a query.
      *
      * @param string $sql The query string to execute.
@@ -70,10 +77,12 @@ trait TransactionalReadTrait
     public function execute($sql, array $options = [])
     {
         $this->singleUseState();
+        $this->checkReadContext();
 
         $options['transactionId'] = $this->transactionId;
         $options['transactionType'] = $this->context;
-        $selector = $this->transactionSelector($options);
+
+        $selector = $this->transactionSelector($options, $this->options);
 
         $options['transaction'] = $selector[0];
 
@@ -98,10 +107,12 @@ trait TransactionalReadTrait
     public function read($table, KeySet $keySet, array $columns, array $options = [])
     {
         $this->singleUseState();
+        $this->checkReadContext();
 
         $options['transactionId'] = $this->transactionId;
         $options['transactionType'] = $this->context;
-        $selector = $this->transactionSelector($options);
+        $options += $this->options;
+        $selector = $this->transactionSelector($options, $this->options);
 
         $options['transaction'] = $selector[0];
 
@@ -147,5 +158,18 @@ trait TransactionalReadTrait
         }
 
         return false;
+    }
+
+    /**
+     * Check whether the context is valid for a read operation. Reads are not
+     * allowed in single-use read-write transactions.
+     *
+     * @throws \BadMethodCallException
+     */
+    private function checkReadContext()
+    {
+        if ($this->type === self::TYPE_SINGLE_USE && $this->context === SessionPoolInterface::CONTEXT_READWRITE) {
+            throw new \BadMethodCallException('Cannot use a single-use read-write transaction for read or execute.');
+        }
     }
 }

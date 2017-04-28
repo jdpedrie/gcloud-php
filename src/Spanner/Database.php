@@ -493,6 +493,13 @@ class Database
      *           timestamp.
      *     @type Duration $exactStaleness Represents a number of seconds. Executes
      *           all reads at a timestamp that is $exactStaleness old.
+     *     @type Timestamp $minReadTimestamp Executes all reads at a
+     *           timestamp >= min_read_timestamp. Only available when
+     *           `$options.singleUse` is true.
+     *     @type Duration $maxStaleness Read data at a timestamp >= NOW - max_staleness
+     *           seconds. Guarantees that all writes that have committed more
+     *           than the specified number of seconds ago are visible. Only
+     *           available when `$options.singleUse` is true.
      *     @type bool $singleUse If true, a Transaction ID will not be allocated
      *           up front. Instead, the transaction will be considered
      *           "single-use", and may be used for only a single operation.
@@ -503,19 +510,65 @@ class Database
      */
     public function snapshot(array $options = [])
     {
-        // These are only available in single-use transactions.
-        if (isset($options['maxStaleness']) || isset($options['minReadTimestamp'])) {
-            throw new \BadMethodCallException(
-                'maxStaleness and minReadTimestamp are only available in single-use transactions.'
-            );
-        }
+        $options += [
+            'singleUse' => false
+        ];
 
-        $transactionOptions = $this->configureSnapshotOptions($options);
+        $options['transactionOptions'] = $this->configureSnapshotOptions($options);
 
         $session = $this->selectSession(SessionPoolInterface::CONTEXT_READ);
 
         try {
-            return $this->operation->snapshot($session, $transactionOptions, $options);
+            return $this->operation->snapshot($session, $options);
+        } finally {
+            $session->setExpiration();
+        }
+    }
+
+    /**
+     * Create and return a new read/write Transaction.
+     *
+     * When manually using a Transaction, it is advised that retry logic be
+     * implemented to reapply all operations when an instance of
+     * {@see Google\Cloud\Core\Exception\AbortedException} is thrown.
+     *
+     * If you wish Google Cloud PHP to handle retry logic for you (recommended
+     * for most cases), use {@see Google\Cloud\Spanner\Database::runTransaction()}.
+     *
+     * Please note that once a transaction reads data, it will lock the read
+     * data, preventing other users from modifying that data. For this reason,
+     * it is important that every transaction commits or rolls back as early as
+     * possible. Do not hold transactions open longer than necessary.
+     *
+     * Example:
+     * ```
+     * $transaction = $database->transaction();
+     * ```
+     *
+     * @codingStandardsIgnoreStart
+     * @see https://cloud.google.com/spanner/reference/rpc/google.spanner.v1#google.spanner.v1.BeginTransactionRequest BeginTransactionRequest
+     * @see https://cloud.google.com/spanner/docs/transactions Transactions
+     * @codingStandardsIgnoreEnd
+     *
+     * @param array $options [optional] {
+     *     Configuration Options.
+     *
+     *     @type bool $singleUse If true, a Transaction ID will not be allocated
+     *           up front. Instead, the transaction will be considered
+     *           "single-use", and may be used for only a single operation.
+     *           **Defaults to** `false`.
+     * }
+     * @return Transaction
+     */
+    public function transaction(array $options = [])
+    {
+        // There isn't anything configurable here.
+        $options['transactionOptions'] = $this->configureTransactionOptions();
+
+        $session = $this->selectSession(SessionPoolInterface::CONTEXT_READWRITE);
+
+        try {
+            return $this->operation->transaction($session, $options);
         } finally {
             $session->setExpiration();
         }
@@ -626,57 +679,6 @@ class Database
 
         try {
             return $retry->execute($commitFn, [$operation, $session, $options]);
-        } finally {
-            $session->setExpiration();
-        }
-    }
-
-    /**
-     * Create and return a new read/write Transaction.
-     *
-     * When manually using a Transaction, it is advised that retry logic be
-     * implemented to reapply all operations when an instance of
-     * {@see Google\Cloud\Core\Exception\AbortedException} is thrown.
-     *
-     * If you wish Google Cloud PHP to handle retry logic for you (recommended
-     * for most cases), use {@see Google\Cloud\Spanner\Database::runTransaction()}.
-     *
-     * Please note that once a transaction reads data, it will lock the read
-     * data, preventing other users from modifying that data. For this reason,
-     * it is important that every transaction commits or rolls back as early as
-     * possible. Do not hold transactions open longer than necessary.
-     *
-     * Example:
-     * ```
-     * $transaction = $database->transaction();
-     * ```
-     *
-     * @codingStandardsIgnoreStart
-     * @see https://cloud.google.com/spanner/reference/rpc/google.spanner.v1#google.spanner.v1.BeginTransactionRequest BeginTransactionRequest
-     * @see https://cloud.google.com/spanner/docs/transactions Transactions
-     * @codingStandardsIgnoreEnd
-     *
-     * @param array $options [optional] {
-     *     Configuration Options.
-     *
-     *     @type bool $singleUse If true, a Transaction ID will not be allocated
-     *           up front. Instead, the transaction will be considered
-     *           "single-use", and may be used for only a single operation.
-     *           **Defaults to** `false`.
-     * }
-     * @return Transaction
-     */
-    public function transaction(array $options = [])
-    {
-        // There isn't anything configurable here.
-        $options['transactionOptions'] = [
-            'readWrite' => []
-        ];
-
-        $session = $this->selectSession(SessionPoolInterface::CONTEXT_READWRITE);
-
-        try {
-            return $this->operation->transaction($session, $options);
         } finally {
             $session->setExpiration();
         }
@@ -1089,8 +1091,8 @@ class Database
      *     @type string $transactionType One of `SessionPoolInterface::CONTEXT_READ`
      *           or `SessionPoolInterface::CONTEXT_READWRITE`. If read/write is
      *           chosen, any snapshot options will be disregarded. If `$begin`
-     *           is false, this option will be ignored. **Defaults to**
-     *           `SessionPoolInterface::CONTEXT_READWRITE`.
+     *           is false, transaction type MUST be `SessionPoolInterface::CONTEXT_READ`.
+     *           **Defaults to** `SessionPoolInterface::CONTEXT_READ`.
      * }
      * @codingStandardsIgnoreEnd
      * @return Result
@@ -1204,8 +1206,8 @@ class Database
      *     @type string $transactionType One of `SessionPoolInterface::CONTEXT_READ`
      *           or `SessionPoolInterface::CONTEXT_READWRITE`. If read/write is
      *           chosen, any snapshot options will be disregarded. If `$begin`
-     *           is false, this option will be ignored. **Defaults to**
-     *           `SessionPoolInterface::CONTEXT_READ`.
+     *           is false, transaction type MUST be `SessionPoolInterface::CONTEXT_READ`.
+     *           **Defaults to** `SessionPoolInterface::CONTEXT_READ`.
      * }
      * @codingStandardsIgnoreEnd
      * @return Result

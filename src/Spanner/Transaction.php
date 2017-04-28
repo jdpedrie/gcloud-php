@@ -66,6 +66,8 @@ use RuntimeException;
  * @method execute() {
  *     Run a query.
  *
+ *     Note that this method is not available in a single-use transaction.
+ *
  *     Example:
  *     ```
  *     $result = $transaction->execute(
@@ -94,6 +96,8 @@ use RuntimeException;
  * }
  * @method read() {
  *     Lookup rows in a table.
+ *
+ *     Note that this method is not available in a single-use transaction.
  *
  *     Example:
  *     ```
@@ -393,11 +397,11 @@ class Transaction implements TransactionalReadInterface
     public function rollback(array $options = [])
     {
         if ($this->state !== self::STATE_ACTIVE) {
-            throw new \RuntimeException('The transaction cannot be rolled back because it is not active');
+            throw new \BadMethodCallException('The transaction cannot be rolled back because it is not active');
         }
 
-        if (!$this->singleUseState()) {
-            $this->state = self::STATE_COMMITTED;
+        if ($this->type === self::TYPE_SINGLE_USE) {
+            throw new \BadMethodCallException('Cannot roll back a single-use transaction.');
         }
 
         $this->state = self::STATE_ROLLED_BACK;

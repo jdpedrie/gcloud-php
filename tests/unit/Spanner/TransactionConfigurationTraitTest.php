@@ -48,15 +48,15 @@ class TransactionConfigurationTraitTest extends \PHPUnit_Framework_TestCase
     {
         $args = [];
         $res = $this->impl->proxyTransactionSelector($args);
-        $this->assertEquals(SessionPoolInterface::CONTEXT_READWRITE, $res[1]);
-        $this->assertEmpty($res[0]['singleUse']['readWrite']);
+        $this->assertEquals(SessionPoolInterface::CONTEXT_READ, $res[1]);
+        $this->assertEquals($res[0]['singleUse']['readOnly'], ['strong' => true]);
     }
 
     public function testTransactionSelectorExistingId()
     {
         $args = ['transactionId' => self::TRANSACTION];
         $res = $this->impl->proxyTransactionSelector($args);
-        $this->assertEquals(SessionPoolInterface::CONTEXT_READWRITE, $res[1]);
+        $this->assertEquals(SessionPoolInterface::CONTEXT_READ, $res[1]);
         $this->assertEquals(self::TRANSACTION, $res[0]['id']);
     }
 
@@ -79,8 +79,8 @@ class TransactionConfigurationTraitTest extends \PHPUnit_Framework_TestCase
     {
         $args = ['begin' => true];
         $res = $this->impl->proxyTransactionSelector($args);
-        $this->assertEquals(SessionPoolInterface::CONTEXT_READWRITE, $res[1]);
-        $this->assertEmpty($res[0]['begin']['readWrite']);
+        $this->assertEquals(SessionPoolInterface::CONTEXT_READ, $res[1]);
+        $this->assertEquals($res[0]['begin']['readOnly'], ['strong' => true]);
     }
 
     public function testConfigureSnapshotOptionsReturnReadTimestamp()
@@ -99,7 +99,7 @@ class TransactionConfigurationTraitTest extends \PHPUnit_Framework_TestCase
 
     public function testConfigureSnapshotOptionsMinReadTimestamp()
     {
-        $args = ['minReadTimestamp' => $this->ts];
+        $args = ['minReadTimestamp' => $this->ts, 'singleUse' => true];
         $res = $this->impl->proxyConfigureSnapshotOptions($args);
         $this->assertEquals(self::TIMESTAMP, $res['readOnly']['minReadTimestamp']);
     }
@@ -113,7 +113,7 @@ class TransactionConfigurationTraitTest extends \PHPUnit_Framework_TestCase
 
     public function testConfigureSnapshotOptionsMaxStaleness()
     {
-        $args = ['maxStaleness' => $this->duration];
+        $args = ['maxStaleness' => $this->duration, 'singleUse' => true];
         $res = $this->impl->proxyConfigureSnapshotOptions($args);
         $this->assertEquals($this->dur, $res['readOnly']['maxStaleness']);
     }

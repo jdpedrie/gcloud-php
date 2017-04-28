@@ -287,7 +287,7 @@ class Operation
             $res = [];
         }
 
-        return $this->createSnapshot($session, $res);
+        return $this->createSnapshot($session, $res + $options);
     }
 
     /**
