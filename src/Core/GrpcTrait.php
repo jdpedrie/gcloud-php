@@ -88,11 +88,22 @@ trait GrpcTrait
      */
     private function formatTimestampFromApi(array $timestamp)
     {
+        $timestamp += [
+            'seconds' => 0,
+            'nanos' => 0
+        ];
+
         $formattedTime = (new DateTime())
             ->setTimeZone(new DateTimeZone('UTC'))
             ->setTimestamp($timestamp['seconds'])
             ->format('Y-m-d\TH:i:s');
-        return $formattedTime .= sprintf('.%sZ', rtrim($timestamp['nanos'], '0'));
+
+        return $formattedTime .= sprintf(
+            '.%sZ',
+            $timestamp['nanos'] === 0
+                ? 0
+                : rtrim($timestamp['nanos'], '0')
+        );
     }
 
     /**

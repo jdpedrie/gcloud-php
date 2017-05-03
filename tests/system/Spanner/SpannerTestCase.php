@@ -27,7 +27,9 @@ class SpannerTestCase extends \PHPUnit_Framework_TestCase
 {
     const TESTING_PREFIX = 'gcloud_testing_';
     const INSTANCE_NAME = 'google-cloud-php-system-tests';
+
     const TEST_TABLE_NAME = 'Users';
+    const TEST_INDEX_NAME = 'uniqueIndex';
 
     protected static $client;
     protected static $instance;
@@ -55,16 +57,20 @@ class SpannerTestCase extends \PHPUnit_Framework_TestCase
         $op->pollUntilComplete();
         $db = self::$client->connect(self::INSTANCE_NAME, $dbName);
 
-        self::$deletionQueue[] = function() use ($db) { $db->drop(); };
+        // self::$deletionQueue[] = function() use ($db) { $db->drop(); };
 
-        $op = $db->updateDdl(
+        $db->updateDdl(
             'CREATE TABLE '. self::TEST_TABLE_NAME .' (
                 id INT64 NOT NULL,
                 name STRING(MAX) NOT NULL,
                 birthday DATE NOT NULL
             ) PRIMARY KEY (id)'
-        );
-        $op->pollUntilComplete();
+        )->pollUntilComplete();
+
+        $db->updateDdl(
+            'CREATE UNIQUE INDEX '. self::TEST_INDEX_NAME .'
+            ON '. self::TEST_TABLE_NAME .' (name)'
+        )->pollUntilComplete();
 
         self::$database = $db;
     }

@@ -135,6 +135,7 @@ class ValueMapper
         $timestamp = preg_replace(self::NANO_REGEX, '.000000Z', $timestamp);
 
         $dt = \DateTimeImmutable::createFromFormat(Timestamp::FORMAT, $timestamp);
+
         return new Timestamp($dt, (isset($matches[1])) ? $matches[1] : 0);
     }
 

@@ -18,12 +18,29 @@
 namespace Google\Cloud\Tests\System\Spanner;
 
 use Google\Cloud\Spanner\Date;
+use Google\Cloud\Spanner\KeySet;
+use Google\Cloud\Spanner\Timestamp;
 
 /**
- * @group spanner
+ * @group spannerz
  */
 class TransactionTest extends SpannerTestCase
 {
+    private static $row = [];
+
+    public static function setUpBeforeClass()
+    {
+        parent::setUpBeforeClass();
+
+        self::$row = [
+            'id' => rand(1000,9999),
+            'name' => uniqid(self::TESTING_PREFIX),
+            'birthday' => new Date(new \DateTime('2000-01-01'))
+        ];
+
+        self::$database->insert(self::TEST_TABLE_NAME, self::$row);
+    }
+
     public function testRunTransaction()
     {
         $db = self::$database;
@@ -42,5 +59,58 @@ class TransactionTest extends SpannerTestCase
         $db->runTransaction(function ($t) {
             $t->rollback();
         });
+    }
+
+    public function testStrongRead()
+    {
+        $db = self::$database;
+
+        $snapshot = $db->snapshot([
+            'strong' => true,
+            'returnReadTimestamp' => true
+        ]);
+
+        $res = $snapshot->execute('SELECT * FROM '. self::TEST_TABLE_NAME .' WHERE id=@id', [
+            'parameters' => [
+                'id' => (int)self::$row['id']
+            ]
+        ]);
+
+        $row = $res->rows()->current();
+
+        $this->assertEquals(self::$row, $row);
+        $this->assertInstanceOf(Timestamp::class, $snapshot->readTimestamp());
+    }
+
+    public function testExactTimestampRead()
+    {
+        $db = self::$database;
+
+        $ts = new Timestamp(new \DateTimeImmutable);
+
+        usleep(500);
+
+        $row = self::$row;
+        $row['name'] = uniqid(self::TESTING_PREFIX);
+
+        $db->update(self::TEST_TABLE_NAME, $row);
+
+        $snapshot = $db->snapshot([
+            'returnReadTimestamp' => true,
+            'readTimestamp' => $ts
+        ]);
+
+        $keySet = new KeySet([
+            'keys' => [self::$row['id']]
+        ]);
+
+        $cols = array_keys(self::$row);
+
+        $res = $snapshot->read(self::TEST_TABLE_NAME, $keySet, $cols)->rows();
+        print_r(iterator_to_array($res));exit;
+        $row = $res->current();
+
+        $this->assertEquals($ts->get(), $snapshot->readTimestamp()->get());
+        $this->assertEquals($row, self::$row);
     }
 }
