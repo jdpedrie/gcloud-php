@@ -92,6 +92,7 @@ trait GrpcTrait
             ->setTimeZone(new DateTimeZone('UTC'))
             ->setTimestamp($timestamp['seconds'])
             ->format('Y-m-d\TH:i:s');
+        $timestamp['nanos'] = str_pad($timestamp['nanos'], 9, '0', STR_PAD_LEFT);
         return $formattedTime .= sprintf('.%sZ', rtrim($timestamp['nanos'], '0'));
     }
 
