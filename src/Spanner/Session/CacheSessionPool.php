@@ -65,7 +65,7 @@ class CacheSessionPool implements SessionPoolInterface
      * @var array
      */
     private static $defaultConfig = [
-        'maxSessions' => PHP_INT_MAX,
+        'maxSessions' => 500,
         'minSessions' => 1,
         'shouldWaitForSession' => true,
         'maxCyclesToWaitForSession' => 30,
