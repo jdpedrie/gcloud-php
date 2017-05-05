@@ -26,7 +26,7 @@ use Symfony\Component\Lock\Store\FlockStore;
 
 /**
  * This session pool implementation accepts a PSR-6 compatible cache
- * implementation and utilizies it to store sessions between requests.
+ * implementation and utilizes it to store sessions between requests.
  *
  * Please note that if you configure a high minimum session value the first
  * request and any after a period of inactivity greater than an hour (the point
