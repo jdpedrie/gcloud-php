@@ -99,7 +99,6 @@ trait TransactionalReadTrait
      *     Configuration Options.
      *
      *     @type string $index The name of an index on the table.
-     *     @type int $offset The number of rows to offset results by.
      *     @type int $limit The number of results to return.
      * }
      * @return Result

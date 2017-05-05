@@ -306,15 +306,38 @@ class DatabaseTest extends \PHPUnit_Framework_TestCase
             ->shouldBeCalled()
             ->willReturn(['id' => self::TRANSACTION]);
 
+        $this->connection->commit(Argument::any())
+            ->shouldBeCalled()
+            ->willReturn(['commitTimestamp' => '2017-01-09T18:05:22.534799Z']);
+
         $this->refreshOperation();
 
         $hasTransaction = false;
 
         $this->database->runTransaction(function (Transaction $t) use (&$hasTransaction) {
             $hasTransaction = true;
+
+            $t->commit();
         });
 
         $this->assertTrue($hasTransaction);
+    }
+
+    /**
+     * @expectedException RuntimeException
+     */
+    public function testRunTransactionNoCommit()
+    {
+        $this->connection->beginTransaction(Argument::any())
+            ->shouldBeCalled()
+            ->willReturn(['id' => self::TRANSACTION]);
+
+        $this->connection->rollback(Argument::any())
+            ->shouldBeCalled();
+
+        $this->refreshOperation();
+
+        $this->database->runTransaction(function (Transaction $t) {});
     }
 
     public function testRunTransactionRetry()

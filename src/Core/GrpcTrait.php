@@ -23,6 +23,7 @@ use Google\Auth\FetchAuthTokenCache;
 use Google\Auth\Cache\MemoryCacheItemPool;
 use Google\Cloud\Core\ArrayTrait;
 use Google\Cloud\Core\GrpcRequestWrapper;
+use google\protobuf;
 
 /**
  * Provides shared functionality for gRPC service implementations.
@@ -181,6 +182,8 @@ trait GrpcTrait
                 return ['number_value' => $value];
             case 'boolean':
                 return ['bool_value' => $value];
+            case 'NULL':
+                return ['null_value' => protobuf\NullValue::NULL_VALUE];
             case 'array':
                 if ($this->isAssoc($value)) {
                     return ['struct_value' => $this->formatStructForApi($value)];

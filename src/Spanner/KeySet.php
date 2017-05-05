@@ -75,11 +75,11 @@ class KeySet
         $this->validateBatch($options['ranges'], KeyRange::class);
 
         if (!is_array($options['keys'])) {
-            throw new \BadMethodCallException('$options.keys must be an array.');
+            throw new \InvalidArgumentException('$options.keys must be an array.');
         }
 
         if (!is_bool($options['all'])) {
-            throw new \BadMethodCallException('$options.all must be a boolean.');
+            throw new \InvalidArgumentException('$options.all must be a boolean.');
         }
 
         $this->keys = $options['keys'];

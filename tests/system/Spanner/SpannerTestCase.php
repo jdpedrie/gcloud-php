@@ -57,7 +57,7 @@ class SpannerTestCase extends \PHPUnit_Framework_TestCase
         $op->pollUntilComplete();
         $db = self::$client->connect(self::INSTANCE_NAME, $dbName);
 
-        // self::$deletionQueue[] = function() use ($db) { $db->drop(); };
+        self::$deletionQueue[] = function() use ($db) { $db->drop(); };
 
         $db->updateDdl(
             'CREATE TABLE '. self::TEST_TABLE_NAME .' (

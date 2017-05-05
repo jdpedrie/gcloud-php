@@ -87,7 +87,7 @@ class KeySetTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($set->keySetObject()['all']);
 
         $set->setMatchAll(false);
-        $this->assertFalse($set->keySetObject()['all']);
+        $this->assertFalse(isset($set->keySetObject()['all']));
     }
 
     public function testRanges()
@@ -115,5 +115,21 @@ class KeySetTest extends \PHPUnit_Framework_TestCase
 
         $set->setMatchAll(true);
         $this->assertTrue($set->matchAll());
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidKeys()
+    {
+        new KeySet(['keys' => 'foo']);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidAll()
+    {
+        new KeySet(['all' => 1]);
     }
 }

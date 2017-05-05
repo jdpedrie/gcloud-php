@@ -30,6 +30,7 @@ use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\IamDatabase;
 use Google\Cloud\Spanner\Session\Session;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
+use Google\Cloud\Spanner\Transaction;
 use Google\Cloud\Spanner\V1\SpannerClient as GrpcSpannerClient;
 use Google\GAX\ValidationException;
 
@@ -592,6 +593,11 @@ class Database
      * it is important that every transaction commits or rolls back as early as
      * possible. Do not hold transactions open longer than necessary.
      *
+     * If a callable finishes executing without invoking
+     * {@see Google\Cloud\Spanner\Transaction::commit()} or
+     * {@see Google\Cloud\Spanner\Transaction::rollback()}, the transaction will
+     * automatically be rolled back and `RuntimeException` thrown.
+     *
      * Example:
      * ```
      * $transaction = $database->runTransaction(function (Transaction $t) use ($username, $password) {
@@ -637,6 +643,7 @@ class Database
      *           `false`.
      * }
      * @return mixed The return value of `$operation`.
+     * @throws RuntimeException
      */
     public function runTransaction(callable $operation, array $options = [])
     {
@@ -666,19 +673,26 @@ class Database
             time_nanosleep($delay['seconds'], $delay['nanos']);
         };
 
-        $commitFn = function ($operation, $session, $options) use ($startTransactionFn) {
+        $transactionFn = function ($operation, $session, $options) use ($startTransactionFn) {
             $transaction = call_user_func_array($startTransactionFn, [
                 $session,
                 $options
             ]);
 
-            return call_user_func($operation, $transaction);
+            $res = call_user_func($operation, $transaction);
+
+            if ($transaction->state() === Transaction::STATE_ACTIVE) {
+                $transaction->rollback($options);
+                throw new \RuntimeException('Transactions must be rolled back or committed.');
+            }
+
+            return $res;
         };
 
         $retry = new Retry($options['maxRetries'], $delayFn);
 
         try {
-            return $retry->execute($commitFn, [$operation, $session, $options]);
+            return $retry->execute($transactionFn, [$operation, $session, $options]);
         } finally {
             $session->setExpiration();
         }
@@ -1059,17 +1073,25 @@ class Database
      * @param string $sql The query string to execute.
      * @param array $options [optional] {
      *     Configuration Options.
-     *
      *     See [TransactionOptions](https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.v1#google.spanner.v1.TransactionOptions)
-     *     for detailed description of available transaction options.
-     *
-     *     Please note that only one of `$strong`, `$minReadTimestamp`,
+     *     for detailed description of available transaction options. Please
+     *     note that only one of `$strong`, `$minReadTimestamp`,
      *     `$maxStaleness`, `$readTimestamp` or `$exactStaleness` may be set in
      *     a request.
      *
      *     @type array $parameters A key/value array of Query Parameters, where
      *           the key is represented in the query string prefixed by a `@`
      *           symbol.
+     *     @type array $types A key/value array of Query Parameter types.
+     *           Generally, Google Cloud PHP can infer types. Explicit type
+     *           definitions are only necessary for null parameter values.
+     *           Accepted values are defined as constants on
+     *           {@see Google\Cloud\Spanner\ValueMapper}, and are as follows:
+     *           `ValueMapper::TYPE_BOOL`, `ValueMapper::TYPE_INT64`,
+     *           `ValueMapper::TYPE_FLOAT64`, `ValueMapper::TYPE_TIMESTAMP`,
+     *           `ValueMapper::TYPE_DATE`, `ValueMapper::TYPE_STRING`,
+     *           `ValueMapper::TYPE_BYTES`, `ValueMapper::TYPE_ARRAY` and
+     *           `ValueMapper::TYPE_STRUCT`.
      *     @type bool $returnReadTimestamp If true, the Cloud Spanner-selected
      *           read timestamp is included in the Transaction message that
      *           describes the transaction.
@@ -1183,7 +1205,6 @@ class Database
      *     a request.
      *
      *     @type string $index The name of an index on the table.
-     *     @type int $offset The number of rows to offset results by.
      *     @type int $limit The number of results to return.
      *     @type bool $returnReadTimestamp If true, the Cloud Spanner-selected
      *           read timestamp is included in the Transaction message that

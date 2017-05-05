@@ -111,6 +111,30 @@ class KeyRange
     }
 
     /**
+     * Returns a key range that covers all keys where the first components match.
+     *
+     * Equivalent to calling `KeyRange::__construct()` with closed type for start
+     * and end, and the same key for the start and end.
+     *
+     * Example:
+     * ```
+     * $range = KeyRange::prefixMatch($key);
+     * ```
+     *
+     * @param array $key The key to match against.
+     * @return KeyRange
+     */
+    public static function prefixMatch(array $key)
+    {
+        return new static([
+            'startType' => self::TYPE_CLOSED,
+            'endType' => self::TYPE_CLOSED,
+            'start' => $key,
+            'end' => $key
+        ]);
+    }
+
+    /**
      * Get the range start.
      *
      * Example:

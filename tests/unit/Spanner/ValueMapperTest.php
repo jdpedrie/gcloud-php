@@ -86,7 +86,7 @@ class ValueMapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException InvalidArgumentException
+     * @expectedException BadMethodCallException
      */
     public function testFormatParamsForExecuteSqlArrayInvalidAssoc()
     {
@@ -96,7 +96,7 @@ class ValueMapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException InvalidArgumentException
+     * @expectedException BadMethodCallException
      */
     public function testFormatParamsForExecuteSqlInvalidTypes()
     {
