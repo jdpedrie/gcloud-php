@@ -152,6 +152,10 @@ class Result implements \IteratorAggregate
                 $bufferedResults[] = $result;
                 $this->setResultData($result);
 
+                if (!isset($result['values'])) {
+                    return;
+                }
+
                 if (isset($result['resumeToken']) || count($bufferedResults >= self::BUFFER_RESULT_LIMIT)) {
                     list($yieldableRows, $chunkedResult) = $this->parseRowsFromBufferedResults($bufferedResults);
 
