@@ -252,7 +252,8 @@ class CacheSessionPool implements SessionPoolInterface
     }
 
     /**
-     * Clear the session pool.
+     * Clear the session pool. Please note that this simply removes sessions
+     * data from the cache and does not delete the sessions themselves.
      */
     public function clear()
     {
