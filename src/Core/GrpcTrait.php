@@ -99,12 +99,8 @@ trait GrpcTrait
             ->setTimestamp($timestamp['seconds'])
             ->format('Y-m-d\TH:i:s');
 
-        return $formattedTime .= sprintf(
-            '.%sZ',
-            $timestamp['nanos'] === 0
-                ? 0
-                : rtrim($timestamp['nanos'], '0')
-        );
+        $timestamp['nanos'] = str_pad($timestamp['nanos'], 9, '0', STR_PAD_LEFT);
+        return $formattedTime .= sprintf('.%sZ', rtrim($timestamp['nanos'], '0'));
     }
 
     /**

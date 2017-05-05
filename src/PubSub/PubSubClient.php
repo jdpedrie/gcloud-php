@@ -19,8 +19,10 @@ namespace Google\Cloud\PubSub;
 
 use Google\Cloud\Core\ArrayTrait;
 use Google\Cloud\Core\ClientTrait;
+use Google\Cloud\Core\Duration;
 use Google\Cloud\Core\Iterator\ItemIterator;
 use Google\Cloud\Core\Iterator\PageIterator;
+use Google\Cloud\Core\Timestamp;
 use Google\Cloud\PubSub\Connection\Grpc;
 use Google\Cloud\PubSub\Connection\Rest;
 use InvalidArgumentException;
@@ -83,7 +85,7 @@ class PubSubClient
     use IncomingMessageTrait;
     use ResourceNameTrait;
 
-    const VERSION = '0.3.0';
+    const VERSION = '0.4.0';
 
     const FULL_CONTROL_SCOPE = 'https://www.googleapis.com/auth/pubsub';
 
@@ -122,8 +124,7 @@ class PubSubClient
      *           **Defaults to** `3`.
      *     @type array $scopes Scopes to be used for the request.
      *     @type string $transport The transport type used for requests. May be
-     *           either `grpc` or `rest`. **Defaults to** `grpc` if gRPC support
-     *           is detected on the system.
+     *           either `grpc` or `rest`. **Defaults to** `rest`.
      * }
      * @throws \InvalidArgumentException
      */

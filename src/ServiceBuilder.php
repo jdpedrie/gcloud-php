@@ -26,6 +26,7 @@ use Google\Cloud\PubSub\PubSubClient;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Speech\SpeechClient;
 use Google\Cloud\Storage\StorageClient;
+use Google\Cloud\Trace\TraceClient;
 use Google\Cloud\Translate\TranslateClient;
 use Google\Cloud\Vision\VisionClient;
 use Psr\Cache\CacheItemPoolInterface;
@@ -49,7 +50,7 @@ use Psr\Cache\CacheItemPoolInterface;
  */
 class ServiceBuilder
 {
-    const VERSION = '0.26.0';
+    const VERSION = '0.28.0';
 
     /**
      * @var array Configuration options to be used between clients.
@@ -253,7 +254,7 @@ class ServiceBuilder
      *     Configuration options. See
      *     {@see Google\Cloud\ServiceBuilder::__construct()} for the other available options.
      *
-     *     @type string $languageCode Required. The language of the content to
+     *     @type string $languageCode The language of the content to
      *           be recognized. Only BCP-47 (e.g., `"en-US"`, `"es-ES"`)
      *           language codes are accepted. See
      *           [Language Support](https://cloud.google.com/speech/docs/languages)
@@ -282,6 +283,26 @@ class ServiceBuilder
     public function storage(array $config = [])
     {
         return new StorageClient($config ? $this->resolveConfig($config) : $this->config);
+    }
+
+
+    /**
+     * Google Stackdriver Trace allows you to collect latency data from your applications
+     * and display it in the Google Cloud Platform Console. Find more information at
+     * [Stackdriver Trace API docs](https://cloud.google.com/trace/docs/).
+     *
+     * Example:
+     * ```
+     * $trace = $cloud->trace();
+     * ```
+     *
+     * @param array $config [optional] Configuration options. See
+     *        {@see Google\Cloud\ServiceBuilder::__construct()} for the available options.
+     * @return TraceClient
+     */
+    public function trace(array $config = [])
+    {
+        return new TraceClient($config ? $this->resolveConfig($config) : $this->config);
     }
 
     /**
