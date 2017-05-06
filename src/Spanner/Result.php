@@ -157,7 +157,7 @@ class Result implements \IteratorAggregate
                     return;
                 }
 
-                if (isset($result['resumeToken']) || count($bufferedResults >= self::BUFFER_RESULT_LIMIT)) {
+                if (isset($result['resumeToken']) || count($bufferedResults) >= self::BUFFER_RESULT_LIMIT) {
                     list($yieldableRows, $chunkedResult) = $this->parseRowsFromBufferedResults($bufferedResults);
 
                     foreach ($yieldableRows as $row) {
@@ -180,20 +180,20 @@ class Result implements \IteratorAggregate
 
                 $generator->next();
             } catch (\Exception $ex) {
-                if (!$shouldRetry) {
-                    throw $ex;
+                if ($shouldRetry && $ex->getCode() === Grpc\STATUS_UNAVAILABLE) {
+                    $backoff = new ExponentialBackoff($this->retries, function (\Exception $ex) {
+                        return $ex->getCode() === Grpc\STATUS_UNAVAILABLE
+                            ? true
+                            : false;
+                    });
+
+                    // Attempt to resume using our last stored resume token. If we
+                    // successfully resume, flush the buffer.
+                    $generator = $backoff->execute($call, [$this->resumeToken]);
+                    $bufferedResults = [];
                 }
 
-                $backoff = new ExponentialBackoff($this->retries, function (\Exception $ex) {
-                    return $ex->getCode() === Grpc\STATUS_UNAVAILABLE
-                        ? true
-                        : false;
-                });
-
-                // Attempt to resume using our last stored resume token. If we
-                // successfully resume, flush the buffer.
-                $generator = $backoff->execute($call, [$this->resumeToken]);
-                $bufferedResults = [];
+                throw $ex;
             }
         }
 
@@ -305,7 +305,7 @@ class Result implements \IteratorAggregate
     {
         $values = [];
         $chunkedResult = null;
-        $shouldMerge = isset($bufferedResults[0]['chunkedValue']);
+        $shouldMergeValues = isset($bufferedResults[0]['chunkedValue']);
 
         foreach ($bufferedResults as $key => $result) {
             if ($key === 0) {
@@ -313,10 +313,10 @@ class Result implements \IteratorAggregate
                 continue;
             }
 
-            $values = $shouldMerge
+            $values = $shouldMergeValues
                 ? $this->mergeValues($values, $result['values'])
                 : array_merge($values, $result['values']);
-            $shouldMerge = (isset($result['chunkedValue']))
+            $shouldMergeValues = (isset($result['chunkedValue']))
                 ? true
                 : false;
         }
