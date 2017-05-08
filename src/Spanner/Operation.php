@@ -168,7 +168,8 @@ class Operation
         ];
 
         $parameters = $this->pluck('parameters', $options);
-        $options += $this->mapper->formatParamsForExecuteSql($parameters, $options['types']);
+        $types = $this->pluck('types', $options);
+        $options += $this->mapper->formatParamsForExecuteSql($parameters, $types);
 
         $context = $this->pluck('transactionContext', $options);
 

@@ -414,8 +414,42 @@ class Grpc implements ConnectionInterface
     {
         $params = $this->pluck('params', $args);
         if ($params) {
-            $args['params'] = (new protobuf\Struct)
-                ->deserialize($this->formatStructForApi($params), $this->codec);
+            $args['params'] = [];
+
+            $args['params'] = new protobuf\Struct;
+
+            foreach ($params as $key => $param) {
+                $fields = new protobuf\Struct\FieldsEntry;
+                $field = new protobuf\Value;
+                $value = $this->formatValueForApi($param);
+
+                switch (array_keys($value)[0]) {
+                    case 'string_value':
+                        $setter = 'setStringValue';
+                        break;
+                    case 'number_value':
+                        $setter = 'setNumberValue';
+                        break;
+                    case 'bool_value':
+                        $setter = 'setBoolValue';
+                        break;
+                    case 'null_value':
+                        $setter = 'setNullValue';
+                        break;
+                    case 'struct_value':
+                        $setter = 'setStructValue';
+                        break;
+                    case 'list_value':
+                        $setter = 'setListValue';
+                        break;
+                }
+
+                $field->$setter(current($value));
+                $fields->setKey($key);
+                $fields->setValue($field);
+
+                $args['params']->addFields($fields);
+            }
         }
 
         if (isset($args['paramTypes']) && is_array($args['paramTypes'])) {

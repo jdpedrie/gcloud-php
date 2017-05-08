@@ -28,7 +28,7 @@ class ValueMapper
 {
     use ArrayTrait;
 
-    const NANO_REGEX = '/\.(\d{1,9})Z/';
+    const NANO_REGEX = '/(?:\.(\d{1,9})Z)|(?:Z)/';
 
     const TYPE_BOOL = TypeCode::TYPE_BOOL;
     const TYPE_INT64 = TypeCode::TYPE_INT64;
@@ -90,6 +90,11 @@ class ValueMapper
             }
 
             $type = isset($types[$key]) ? $types[$key] : null;
+            $arrayType = null;
+            if (is_array($type)) {
+                $arrayType = $type[1];
+                $type = $type[0];
+            }
 
             if ($type !== null && !in_array($type, $this->allowedTypes)) {
                 throw new \BadMethodCallException(sprintf(
@@ -99,7 +104,15 @@ class ValueMapper
                 ));
             }
 
-            list ($parameters[$key], $paramTypes[$key]) = $this->paramType($value, $type);
+            if ($arrayType !== null && !in_array($arrayType, $this->allowedTypes)) {
+                throw new \BadMethodCallException(sprintf(
+                    'Type %s given for parameter @%s is not valid.',
+                    $type,
+                    $key
+                ));
+            }
+
+            list ($parameters[$key], $paramTypes[$key]) = $this->paramType($value, $type, $arrayType);
         }
 
         return [
@@ -254,31 +267,33 @@ class ValueMapper
      * Create a spanner parameter type value object from a PHP value type.
      *
      * @param mixed $value The PHP value
+     * @param int $givenType
+     * @param int $arrayType
      * @return array The Value type
      */
-    private function paramType($value, $givenType = null)
+    private function paramType($value, $givenType = null, $arrayType = null)
     {
         $phpType = gettype($value);
         switch ($phpType) {
             case 'boolean':
-                $type = $this->typeObject(self::TYPE_BOOL);
+                $type = $this->typeObject($givenType ?: self::TYPE_BOOL);
                 break;
 
             case 'integer':
                 $value = (string) $value;
-                $type = $this->typeObject(self::TYPE_INT64);
+                $type = $this->typeObject($givenType ?: self::TYPE_INT64);
                 break;
 
             case 'double':
-                $type = $this->typeObject(self::TYPE_FLOAT64);
+                $type = $this->typeObject($givenType ?: self::TYPE_FLOAT64);
                 break;
 
             case 'string':
-                $type = $this->typeObject(self::TYPE_STRING);
+                $type = $this->typeObject($givenType ?: self::TYPE_STRING);
                 break;
 
             case 'resource':
-                $type = $this->typeObject(self::TYPE_BYTES);
+                $type = $this->typeObject($givenType ?: self::TYPE_BYTES);
                 $value = base64_encode(stream_get_contents($value));
                 break;
 
@@ -317,7 +332,15 @@ class ValueMapper
                 break;
 
             case 'NULL':
-                $type = $this->typeObject($givenType);
+                if ($givenType === self::TYPE_ARRAY) {
+                    $type = $this->typeObject(
+                        $givenType,
+                        $this->typeObject($arrayType),
+                        'arrayElementType'
+                    );
+                } else {
+                    $type = $this->typeObject($givenType);
+                }
                 break;
 
             default:

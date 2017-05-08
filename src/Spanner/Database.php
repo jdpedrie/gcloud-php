@@ -681,7 +681,9 @@ class Database
 
             $res = call_user_func($operation, $transaction);
 
-            if ($transaction->state() === Transaction::STATE_ACTIVE) {
+            $active = $transaction->state() === Transaction::STATE_ACTIVE;
+            $singleUse = $transaction->type() === Transaction::TYPE_SINGLE_USE;
+            if ($active && !$singleUse) {
                 $transaction->rollback($options);
                 throw new \RuntimeException('Transactions must be rolled back or committed.');
             }
@@ -1091,7 +1093,10 @@ class Database
      *           `ValueMapper::TYPE_FLOAT64`, `ValueMapper::TYPE_TIMESTAMP`,
      *           `ValueMapper::TYPE_DATE`, `ValueMapper::TYPE_STRING`,
      *           `ValueMapper::TYPE_BYTES`, `ValueMapper::TYPE_ARRAY` and
-     *           `ValueMapper::TYPE_STRUCT`.
+     *           `ValueMapper::TYPE_STRUCT`. If the parameter type is an array,
+     *           the type should be given as an array, where the first element
+     *           is `ValueMapper::TYPE_ARRAY` and the second element is the
+     *           array type, for instance `[ValueMapper::TYPE_ARRAY, ValueMapper::TYPE_INT64]`.
      *     @type bool $returnReadTimestamp If true, the Cloud Spanner-selected
      *           read timestamp is included in the Transaction message that
      *           describes the transaction.
