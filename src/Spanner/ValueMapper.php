@@ -286,6 +286,20 @@ class ValueMapper
 
             case 'double':
                 $type = $this->typeObject($givenType ?: self::TYPE_FLOAT64);
+                switch ($value) {
+                    case INF:
+                        $value = 'Infinity';
+                        break;
+
+                    case -INF:
+                        $value = '-Infinity';
+                        break;
+                }
+
+                if (!is_string($value) && is_nan($value)) {
+                    $value = 'NaN';
+                }
+
                 break;
 
             case 'string':
@@ -302,7 +316,7 @@ class ValueMapper
                 break;
 
             case 'array':
-                if ($this->isAssoc($value)) {
+                if (!empty($value) && $this->isAssoc($value)) {
                     throw new \BadMethodCallException(
                         'Associative arrays are not supported. Did you mean to call a batch method?'
                     );
@@ -318,13 +332,13 @@ class ValueMapper
                     }
                 }
 
-                if (count(array_unique($types)) !== 1) {
+                if (count(array_unique($types)) > 1) {
                     throw new \BadMethodCallException('Array values may not be of mixed type');
                 }
 
                 $type = $this->typeObject(
                     self::TYPE_ARRAY,
-                    $this->typeObject($types[0]),
+                    $this->typeObject((isset($types[0])) ? $types[0] : null),
                     'arrayElementType'
                 );
 
