@@ -357,25 +357,18 @@ class Operation
      */
     private function flattenKeySet(KeySet $keySet)
     {
-        $keyRanges = $keySet->ranges();
-        if ($keyRanges) {
-            $ranges = [];
-            foreach ($keyRanges as $range) {
-                $types = $range->types();
+        $keys = $keySet->keySetObject();
 
-                $start = $range->start();
-                $range->setStart($types['start'], $this->mapper->encodeValuesAsSimpleType($start));
+        if (!empty($keys['ranges'])) {
+            foreach ($keys['ranges'] as $index => $range) {
+                foreach ($range as $type => $rangeKeys) {
+                    $range[$type] = $this->mapper->encodeValuesAsSimpleType($rangeKeys);
+                }
 
-                $end = $range->end();
-                $range->setEnd($types['end'], $this->mapper->encodeValuesAsSimpleType($end));
-
-                $ranges[] = $range;
+                $keys['ranges'][$index] = $range;
             }
-
-            $keySet->setRanges($ranges);
         }
 
-        $keys = $keySet->keySetObject();
         if (!empty($keys['keys'])) {
             $keys['keys'] = $this->mapper->encodeValuesAsSimpleType($keys['keys']);
         }

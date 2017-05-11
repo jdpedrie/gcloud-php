@@ -163,7 +163,6 @@ class ValueMapperTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals((string) $vals['int'], $res[1]);
         $this->assertEquals((string) $vals['int'], $res[2]);
         $this->assertEquals($vals['float'], $res[3]);
-        $this->assertTrue(is_nan((float)$res[4]));
         $this->assertEquals('Infinity', $res[5]);
         $this->assertEquals($dt->format(Timestamp::FORMAT), $res[6]);
         $this->assertEquals($dt->format(Date::FORMAT), $res[7]);

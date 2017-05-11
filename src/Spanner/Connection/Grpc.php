@@ -640,7 +640,11 @@ class Grpc implements ConnectionInterface
     {
         $keys = $this->pluck('keys', $keySet, false);
         if ($keys) {
-            $keySet['keys'] = $this->formatListForApi($keys);
+            $keySet['keys'] = [];
+
+            foreach ($keys as $key) {
+                $keySet['keys'][] = $this->formatListForApi([$key]);
+            }
         }
 
         if (isset($keySet['ranges'])) {

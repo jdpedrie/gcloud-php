@@ -19,6 +19,8 @@ namespace Google\Cloud\Tests\System\Spanner;
 
 use Google\Cloud\Core\Int64;
 use Google\Cloud\Spanner\Bytes;
+use Google\Cloud\Spanner\KeyRange;
+use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\ValueMapper;
 
 /**
@@ -27,6 +29,193 @@ use Google\Cloud\Spanner\ValueMapper;
  */
 class ReadTest extends SpannerTestCase
 {
+    const READ_TABLE_NAME = 'Reads';
+    const RANGES_TABLE_NAME = 'Ranges';
+
+    private static $dataset;
+
+    public static function setupBeforeClass()
+    {
+        parent::setupBeforeClass();
+
+        $db = self::$database;
+        $db->updateDdlBatch([
+            'CREATE TABLE '. self::READ_TABLE_NAME .' (
+                id INT64 NOT NULL,
+                val STRING(MAX) NOT NULL,
+            ) PRIMARY KEY (id)',
+            'CREATE TABLE '. self::RANGES_TABLE_NAME .' (
+                id INT64 NOT NULL,
+                val STRING(MAX) NOT NULL,
+            ) PRIMARY KEY (id, val)'
+        ])->pollUntilComplete();
+
+        self::$dataset = self::generateDataset(20, true);
+        $db->insertBatch(self::RANGES_TABLE_NAME, self::$dataset);
+    }
+
+    /**
+     * covers 12
+     */
+    public function testReadPoint()
+    {
+        $dataset = $this->generateDataset();
+
+        $db = self::$database;
+        $db->insertBatch(self::READ_TABLE_NAME, $dataset);
+
+        $indexes = array_rand($dataset, 4);
+        $points = [];
+        $keys = [];
+        array_walk($indexes, function ($index) use ($dataset, &$points, &$keys) {
+            $points[] = $dataset[$index];
+            $keys[] = $dataset[$index]['id'];
+        });
+
+        $keyset = new KeySet(['keys' => $keys]);
+
+        $res = $db->read(self::READ_TABLE_NAME, $keyset, array_keys($dataset[0]));
+        $rows = $res->rows();
+        foreach ($rows as $index => $row) {
+            $this->assertTrue(in_array($row, $dataset));
+            $this->assertTrue(in_array($row, $points));
+        }
+    }
+
+    // public function rangeProvider()
+    // {
+    //     return [
+    //         // single key, open-open
+
+    //     ];
+    // }
+
+    /**
+     * covers 8
+     */
+    public function testRangeReadSingleKeyOpen()
+    {
+        $db = self::$database;
+
+        $range = new KeyRange([
+            'start' => self::$dataset[0],
+            'end' => self::$dataset[10],
+        ]);
+
+        $keyset = new KeySet(['ranges' => [$range]]);
+
+        $res = $db->read(self::RANGES_TABLE_NAME, $keyset, array_keys(self::$dataset[0]));
+        $rows = iterator_to_array($res->rows());
+        $this->assertFalse(in_array(self::$dataset[0], $rows));
+        $this->assertFalse(in_array(self::$dataset[10], $rows));
+    }
+
+    /**
+     * covers 8
+     */
+    public function testRangeReadSingleKeyClosed()
+    {
+        $db = self::$database;
+
+        $range = new KeyRange([
+            'start' => self::$dataset[0],
+            'end' => self::$dataset[10],
+            'startType' => KeyRange::TYPE_CLOSED,
+            'endType' => KeyRange::TYPE_CLOSED,
+        ]);
+
+        $keyset = new KeySet(['ranges' => [$range]]);
+
+        $res = $db->read(self::RANGES_TABLE_NAME, $keyset, array_keys(self::$dataset[0]));
+        $rows = iterator_to_array($res->rows());
+        $this->assertTrue(in_array(self::$dataset[0], $rows));
+        $this->assertTrue(in_array(self::$dataset[10], $rows));
+    }
+
+    /**
+     * covers 8
+     */
+    public function testRangeReadSingleKeyOpenClosed()
+    {
+        $db = self::$database;
+
+        $range = new KeyRange([
+            'start' => self::$dataset[0],
+            'end' => self::$dataset[10],
+            'endType' => KeyRange::TYPE_CLOSED
+        ]);
+
+        $keyset = new KeySet(['ranges' => [$range]]);
+
+        $res = $db->read(self::RANGES_TABLE_NAME, $keyset, array_keys(self::$dataset[0]));
+        $rows = iterator_to_array($res->rows());
+        $this->assertFalse(in_array(self::$dataset[0], $rows));
+        $this->assertTrue(in_array(self::$dataset[10], $rows));
+    }
+
+    /**
+     * covers 8
+     */
+    public function testRangeReadSingleKeyClosedOpen()
+    {
+        $db = self::$database;
+
+        $range = new KeyRange([
+            'start' => self::$dataset[0],
+            'startType' => KeyRange::TYPE_CLOSED,
+            'end' => self::$dataset[10],
+        ]);
+
+        $keyset = new KeySet(['ranges' => [$range]]);
+
+        $res = $db->read(self::RANGES_TABLE_NAME, $keyset, array_keys(self::$dataset[0]));
+        $rows = iterator_to_array($res->rows());
+        $this->assertTrue(in_array(self::$dataset[0], $rows));
+        $this->assertFalse(in_array(self::$dataset[10], $rows));
+    }
+
+    /**
+     * covers 8
+     */
+    public function testRangeReadPartialKeyOpen()
+    {
+        $db = self::$database;
+
+        $range = new KeyRange([
+            'start' => [self::$dataset[0]['id']],
+            'end' => [self::$dataset[10]['id']],
+        ]);
+
+        $keyset = new KeySet(['ranges' => [$range]]);
+
+        $res = $db->read(self::RANGES_TABLE_NAME, $keyset, array_keys(self::$dataset[0]));
+        $rows = iterator_to_array($res->rows());
+        $this->assertFalse(in_array(self::$dataset[0], $rows));
+        $this->assertFalse(in_array(self::$dataset[10], $rows));
+    }
+
+    /**
+     * covers 8
+     */
+    public function testRangeReadPartialKeyClosed()
+    {
+        $db = self::$database;
+
+        $range = new KeyRange([
+            'start' => [self::$dataset[0]['id']],
+            'end' => [self::$dataset[10]['id']],
+            'startType' => KeyRange::TYPE_CLOSED,
+            'endType' => KeyRange::TYPE_CLOSED,
+        ]);
+
+        $keyset = new KeySet(['ranges' => [$range]]);
+
+        $res = $db->read(self::RANGES_TABLE_NAME, $keyset, array_keys(self::$dataset[0]));
+        $rows = iterator_to_array($res->rows());
+        $this->assertTrue(in_array(self::$dataset[0], $rows));
+        $this->assertTrue(in_array(self::$dataset[10], $rows));
+    }
+
     /**
      * covers 21
      */
@@ -182,5 +371,24 @@ class ReadTest extends SpannerTestCase
 
         $row = $res->rows()->current();
         $this->assertEquals($arr, $row['foo']);
+    }
+
+    private static function randId()
+    {
+        return rand(1,9999999);
+    }
+
+    private static function generateDataset($count = 20, $ordered = false)
+    {
+        $dataset = [];
+        for ($i = 0; $i < $count; $i++) {
+            $id = ($ordered) ? $i : self::randId();
+            $dataset[] = [
+                'id' => $id,
+                'val' => uniqid(self::TESTING_PREFIX)
+            ];
+        }
+
+        return $dataset;
     }
 }

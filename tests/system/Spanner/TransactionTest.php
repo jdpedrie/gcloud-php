@@ -79,37 +79,6 @@ class TransactionTest extends SpannerTestCase
         $this->assertInstanceOf(Timestamp::class, $snapshot->readTimestamp());
     }
 
-    public function testExactTimestampRead()
-    {
-        $db = self::$database;
-
-        $ts = new Timestamp(new \DateTimeImmutable);
-
-        $row = $db->execute('SELECT * FROM '. self::TEST_TABLE_NAME .' WHERE id = @id', [
-            'parameters' => ['id' => self::$row['id']]
-        ])->rows()->current();
-        $row['name'] = uniqid(self::TESTING_PREFIX);
-
-        $db->update(self::TEST_TABLE_NAME, $row);
-        sleep(10);
-
-        $snapshot = $db->snapshot([
-            'returnReadTimestamp' => true,
-            'readTimestamp' => $ts
-        ]);
-
-        list($keySet, $cols) = $this->readArgs();
-
-        $res = $snapshot->read(self::TEST_TABLE_NAME, $keySet, $cols)->rows();
-        $row = $res->current();
-
-        $this->assertEquals($ts->get(), $snapshot->readTimestamp()->get());
-        $this->assertEquals($row, self::$row);
-
-        // Reset to previous state.
-        $db->update(self::TEST_TABLE_NAME, self::$row);
-    }
-
     private function readArgs()
     {
         return [
