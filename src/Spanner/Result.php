@@ -146,7 +146,7 @@ class Result implements \IteratorAggregate
      * $rows = $result->rows();
      * ```
      *
-     * @param string @format Determines the format in which rows are returned.
+     * @param string $format Determines the format in which rows are returned.
      *        `Result::RETURN_NAME_VALUE_PAIR` returns items as a
      *        multi-dimensional array containing a name and a value key.
      *        Ex: `[0 => ['name' => 'column1', 'value' => 'my_value']]`.
