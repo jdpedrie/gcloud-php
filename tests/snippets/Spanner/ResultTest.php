@@ -44,6 +44,8 @@ class ResultTest extends SnippetTestCase
             ->willReturn($this->resultGenerator());
         $result->metadata()
             ->willReturn([]);
+        $result->columns()
+            ->willReturn([]);
         $result->snapshot()
             ->willReturn($this->prophesize(Snapshot::class)->reveal());
         $result->transaction()
@@ -75,6 +77,14 @@ class ResultTest extends SnippetTestCase
         $snippet->addLocal('result', $this->result);
         $res = $snippet->invoke('rows');
         $this->assertInstanceOf(\Generator::class, $res->returnVal());
+    }
+
+    public function testColumns()
+    {
+        $snippet = $this->snippetFromMethod(Result::class, 'columns');
+        $snippet->addLocal('result', $this->result);
+        $res = $snippet->invoke('columns');
+        $this->assertInternalType('array', $res->returnVal());
     }
 
     public function testMetadata()
