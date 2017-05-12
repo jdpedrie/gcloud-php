@@ -373,11 +373,6 @@ class ReadTest extends SpannerTestCase
         $this->assertEquals($arr, $row['foo']);
     }
 
-    private static function randId()
-    {
-        return rand(1,9999999);
-    }
-
     private static function generateDataset($count = 20, $ordered = false)
     {
         $dataset = [];

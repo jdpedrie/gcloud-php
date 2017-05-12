@@ -372,9 +372,4 @@ class WriteTest extends SpannerTestCase
             'boolField' => 'bar'
         ]);
     }
-
-    private function randId()
-    {
-        return rand(1,9999999);
-    }
 }

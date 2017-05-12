@@ -23,9 +23,12 @@ use Google\Cloud\Spanner\Timestamp;
 
 /**
  * @group spanner
+ * @group spanner-transactions
  */
 class TransactionTest extends SpannerTestCase
 {
+    const TABLE_NAME = 'Transactions';
+
     private static $row = [];
 
     public static function setUpBeforeClass()
@@ -39,6 +42,13 @@ class TransactionTest extends SpannerTestCase
         ];
 
         self::$database->insert(self::TEST_TABLE_NAME, self::$row);
+
+        self::$database->updateDdl(
+            'CREATE TABLE '. self::TABLE_NAME .' (
+                id INT64 NOT NULL,
+                number INT64 NOT NULL
+            ) PRIMARY KEY (id)'
+        )->pollUntilComplete();
     }
 
     public function testRunTransaction()
@@ -59,6 +69,107 @@ class TransactionTest extends SpannerTestCase
         $db->runTransaction(function ($t) {
             $t->rollback();
         });
+    }
+
+    /**
+     * covers 73
+     */
+    public function testConcurrentTransactionsIncrementValueWithRead()
+    {
+        $db = self::$database;
+        $db2 = self::$database2;
+
+        $id = $this->randId();
+        $db->insert(self::TABLE_NAME, [
+            'id' => $id,
+            'number' => 0
+        ]);
+
+        $keyset = new KeySet(['keys' => [$id]]);
+        $columns = ['id','number'];
+
+        $iteration = 0;
+        $db->runTransaction(function ($transaction) use ($db2, &$iteration, $keyset, $columns) {
+            $row = $transaction->read(self::TABLE_NAME, $keyset, $columns)->rows()->current();
+
+            if ($iteration === 0) {
+                $db2->runTransaction(function ($t2) use ($keyset, $columns) {
+                    $row = $t2->read(self::TABLE_NAME, $keyset, $columns)->rows()->current();
+
+                    $row['number'] = $row['number']+1;
+
+                    $t2->update(self::TABLE_NAME, $row);
+                    $t2->commit();
+                });
+            }
+
+            $row['number'] = $row['number']+1;
+            $iteration++;
+
+            $transaction->update(self::TABLE_NAME, $row);
+            $transaction->commit();
+        });
+
+        $row = $db->execute('SELECT * FROM '. self::TABLE_NAME .' WHERE id = @id', [
+            'parameters' => [
+                'id' => $id
+            ]
+        ])->rows()->current();
+
+        $this->assertEquals(2, $row['number']);
+    }
+
+    /**
+     * covers 74
+     */
+    public function testConcurrentTransactionsIncrementValueWithExecute()
+    {
+        $db = self::$database;
+        $db2 = self::$database2;
+
+        $id = $this->randId();
+        $db->insert(self::TABLE_NAME, [
+            'id' => $id,
+            'number' => 0
+        ]);
+
+        $iteration = 0;
+        $db->runTransaction(function ($transaction) use ($db2, $id, &$iteration) {
+            $row = $transaction->execute('SELECT * FROM '. self::TABLE_NAME .' WHERE id = @id', [
+                'parameters' => [
+                    'id' => $id
+                ]
+            ])->rows()->current();
+
+            if ($iteration === 0) {
+                $db2->runTransaction(function ($t2) use ($id) {
+                    $row = $t2->execute('SELECT * FROM '. self::TABLE_NAME .' WHERE id = @id', [
+                        'parameters' => [
+                            'id' => $id
+                        ]
+                    ])->rows()->current();
+
+                    $row['number'] = $row['number']+1;
+
+                    $t2->update(self::TABLE_NAME, $row);
+                    $t2->commit();
+                });
+            }
+
+            $row['number'] = $row['number']+1;
+            $iteration++;
+
+            $transaction->update(self::TABLE_NAME, $row);
+            $transaction->commit();
+        });
+
+        $row = $db->execute('SELECT * FROM '. self::TABLE_NAME .' WHERE id = @id', [
+            'parameters' => [
+                'id' => $id
+            ]
+        ])->rows()->current();
+
+        $this->assertEquals(2, $row['number']);
     }
 
     public function testStrongRead()
