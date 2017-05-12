@@ -596,7 +596,7 @@ class Database
      * If a callable finishes executing without invoking
      * {@see Google\Cloud\Spanner\Transaction::commit()} or
      * {@see Google\Cloud\Spanner\Transaction::rollback()}, the transaction will
-     * automatically be rolled back and `RuntimeException` thrown.
+     * automatically be rolled back and `\RuntimeException` thrown.
      *
      * Example:
      * ```
@@ -643,7 +643,7 @@ class Database
      *           `false`.
      * }
      * @return mixed The return value of `$operation`.
-     * @throws RuntimeException
+     * @throws \RuntimeException
      */
     public function runTransaction(callable $operation, array $options = [])
     {
