@@ -61,6 +61,16 @@ use Symfony\Component\Lock\Store\FlockStore;
  * implementations please see the
  * [Packagist PHP Package Repository](https://packagist.org/providers/psr/cache-implementation).
  *
+ * Furthermore, [Symfony's Lock Component](https://github.com/symfony/lock) is
+ * also required to be installed as a separate dependency. In our current alpha
+ * state with Spanner we are relying on the following dev commit:
+ *
+ * `composer require symfony/lock:dev-master#1ba6ac9`
+ *
+ * As development continues, this dependency on a dev-master branch will be
+ * discontinued. Please also note, since this is a dev-master dependency it may
+ * require modifications to your composer minimum-stability settings.
+ *
  * Example:
  * ```
  * use Google\Cloud\Spanner\SpannerClient;
@@ -733,9 +743,21 @@ class CacheSessionPool implements SessionPoolInterface
      * Get the default lock.
      *
      * @return LockInterface
+     * @throws \RunTimeException
      */
     private function getDefaultLock()
     {
+        if (!class_exists(FlockStore::class)) {
+            throw new \RuntimeException(
+                'The symfony/lock component must be installed in order for ' .
+                'a default lock to be assumed. Please run the following from ' .
+                'the command line: composer require symfony/lock:dev-master#1ba6ac9. ' .
+                'Please note, since this is a dev-master dependency it may ' .
+                'require modifications to your composer minimum-stability ' .
+                'settings.'
+            );
+        }
+
         $store = new FlockStore(sys_get_temp_dir());
 
         return new SymfonyLockAdapter(
