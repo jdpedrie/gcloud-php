@@ -160,6 +160,11 @@ class Transaction implements TransactionalReadInterface
     private $mutations = [];
 
     /**
+     * @var bool
+     */
+    private $isRetry = false;
+
+    /**
      * @param Operation $operation The Operation instance.
      * @param Session $session The session to use for spanner interactions.
      * @param string $transactionId [optional] The Transaction ID. If no ID is
@@ -168,11 +173,13 @@ class Transaction implements TransactionalReadInterface
     public function __construct(
         Operation $operation,
         Session $session,
-        $transactionId = null
+        $transactionId = null,
+        $isRetry = false
     ) {
         $this->operation = $operation;
         $this->session = $session;
         $this->transactionId = $transactionId;
+        $this->isRetry = $isRetry;
 
         $this->type = $transactionId
             ? self::TYPE_PRE_ALLOCATED
@@ -486,6 +493,29 @@ class Transaction implements TransactionalReadInterface
     public function state()
     {
         return $this->state;
+    }
+
+    /**
+     * Check whether the current transaction is a retry transaction.
+     *
+     * When using {@see Google\Cloud\Spanner\Database::runTransaction()},
+     * transactions are automatically retried when a conflict causes it to abort.
+     * In such cases, subsequent invocations of the transaction callable will
+     * provide a transaction where `$transaction->isRetry()` is true. This can
+     * be useful for debugging and understanding how code is working.
+     *
+     * Example:
+     * ```
+     * if ($transaction->isRetry()) {
+     *     echo 'This is a retry transaction!';
+     * }
+     * ```
+     *
+     * @return bool
+     */
+    public function isRetry()
+    {
+        return $this->isRetry;
     }
 
     /**

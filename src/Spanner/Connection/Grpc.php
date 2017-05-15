@@ -473,19 +473,10 @@ class Grpc implements ConnectionInterface
     {
         $options = new TransactionOptions;
 
-        $transactionOptions = $this->pluck('transactionOptions', $args);
+        $transactionOptions = $this->formatTransactionOptions($this->pluck('transactionOptions', $args));
         if (isset($transactionOptions['readOnly'])) {
-            $ro = $transactionOptions['readOnly'];
-            if (isset($ro['minReadTimestamp'])) {
-                $ro['minReadTimestamp'] = $this->formatTimestampForApi($ro['minReadTimestamp']);
-            }
-
-            if (isset($ro['readTimestamp'])) {
-                $ro['readTimestamp'] = $this->formatTimestampForApi($ro['readTimestamp']);
-            }
-
             $readOnly = (new TransactionOptions\ReadOnly)
-                ->deserialize($ro, $this->codec);
+                ->deserialize($transactionOptions['readOnly'], $this->codec);
 
             $options->setReadOnly($readOnly);
         } else {
@@ -672,7 +663,17 @@ class Grpc implements ConnectionInterface
     {
         $selector = new TransactionSelector;
         if (isset($args['transaction'])) {
-            $selector = $selector->deserialize($this->pluck('transaction', $args), $this->codec);
+            $transaction = $this->pluck('transaction', $args);
+
+            if (isset($transaction['singleUse'])) {
+                $transaction['singleUse'] = $this->formatTransactionOptions($transaction['singleUse']);
+            }
+
+            if (isset($transaction['begin'])) {
+                $transaction['begin'] = $this->formatTransactionOptions($transaction['begin']);
+            }
+
+            $selector = $selector->deserialize($transaction, $this->codec);
         } elseif (isset($args['transactionId'])) {
             $selector = $selector->deserialize(['id' => $this->pluck('transactionId', $args)], $this->codec);
         }
@@ -742,5 +743,27 @@ class Grpc implements ConnectionInterface
         $field->$setter($value);
 
         return $field;
+    }
+
+    /**
+     * @param array $transactionOptions
+     * @return array
+     */
+    private function formatTransactionOptions(array $transactionOptions)
+    {
+        if (isset($transactionOptions['readOnly'])) {
+            $ro = $transactionOptions['readOnly'];
+            if (isset($ro['minReadTimestamp'])) {
+                $ro['minReadTimestamp'] = $this->formatTimestampForApi($ro['minReadTimestamp']);
+            }
+
+            if (isset($ro['readTimestamp'])) {
+                $ro['readTimestamp'] = $this->formatTimestampForApi($ro['readTimestamp']);
+            }
+
+            $transactionOptions['readOnly'] = $ro;
+        }
+
+        return $transactionOptions;
     }
 }

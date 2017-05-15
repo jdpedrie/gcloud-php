@@ -31,9 +31,13 @@ class TransactionTest extends SpannerTestCase
 
     private static $row = [];
 
+    private static $tableName;
+
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
+
+        self::$tableName = uniqid(self::TABLE_NAME);
 
         self::$row = [
             'id' => rand(1000,9999),
@@ -44,7 +48,7 @@ class TransactionTest extends SpannerTestCase
         self::$database->insert(self::TEST_TABLE_NAME, self::$row);
 
         self::$database->updateDdl(
-            'CREATE TABLE '. self::TABLE_NAME .' (
+            'CREATE TABLE '. self::$tableName .' (
                 id INT64 NOT NULL,
                 number INT64 NOT NULL
             ) PRIMARY KEY (id)'
@@ -80,7 +84,7 @@ class TransactionTest extends SpannerTestCase
         $db2 = self::$database2;
 
         $id = $this->randId();
-        $db->insert(self::TABLE_NAME, [
+        $db->insert(self::$tableName, [
             'id' => $id,
             'number' => 0
         ]);
@@ -90,15 +94,15 @@ class TransactionTest extends SpannerTestCase
 
         $iteration = 0;
         $db->runTransaction(function ($transaction) use ($db2, &$iteration, $keyset, $columns) {
-            $row = $transaction->read(self::TABLE_NAME, $keyset, $columns)->rows()->current();
+            $row = $transaction->read(self::$tableName, $keyset, $columns)->rows()->current();
 
             if ($iteration === 0) {
                 $db2->runTransaction(function ($t2) use ($keyset, $columns) {
-                    $row = $t2->read(self::TABLE_NAME, $keyset, $columns)->rows()->current();
+                    $row = $t2->read(self::$tableName, $keyset, $columns)->rows()->current();
 
                     $row['number'] = $row['number']+1;
 
-                    $t2->update(self::TABLE_NAME, $row);
+                    $t2->update(self::$tableName, $row);
                     $t2->commit();
                 });
             }
@@ -106,17 +110,92 @@ class TransactionTest extends SpannerTestCase
             $row['number'] = $row['number']+1;
             $iteration++;
 
-            $transaction->update(self::TABLE_NAME, $row);
+            $transaction->update(self::$tableName, $row);
             $transaction->commit();
         });
 
-        $row = $db->execute('SELECT * FROM '. self::TABLE_NAME .' WHERE id = @id', [
+        $row = $db->execute('SELECT * FROM '. self::$tableName .' WHERE id = @id', [
             'parameters' => [
                 'id' => $id
             ]
         ])->rows()->current();
 
         $this->assertEquals(2, $row['number']);
+    }
+
+    /**
+     * covers 75
+     */
+    public function testTransactionNoCommit()
+    {
+        $db = self::$database;
+
+        $ex = false;
+        try {
+            $db->runTransaction(function ($t) {
+                $t->execute('SELECT * FROM '. self::$tableName);
+            });
+        } catch (\RuntimeException $e) {
+            $this->assertEquals('Transactions must be rolled back or committed.', $e->getMessage());
+            $ex = true;
+        }
+
+        $this->assertTrue($ex);
+    }
+
+    /**
+     * covers 76
+     */
+    public function testAbortedErrorCausesRetry()
+    {
+        $db = self::$database;
+        $db2 = self::$database2;
+
+        $args = [
+            'id' => $this->randId(),
+            'it' => 0,
+            'pre' => null,
+            'edit' => null,
+            'post' => null
+        ];
+
+        $db->insert(self::$tableName, [
+            'id' => $args['id'],
+            'number' => 0
+        ]);
+
+        $db->runTransaction(function ($t) use ($db2, &$args) {
+            if ($args['it'] === 0) {
+                $row = $t->execute('SELECT * FROM '. self::$tableName .' WHERE id = @id', [
+                    'parameters' => ['id' => $args['id']]
+                ])->rows()->current();
+
+                $args['pre'] = $row['number'];
+
+                $db2->runTransaction(function ($t2) use (&$args) {
+                    $row = $t2->execute('SELECT * FROM '. self::$tableName .' WHERE id = @id', [
+                        'parameters' => ['id' => $args['id']]
+                    ])->rows()->current();
+
+                    $args['edit'] = $row['number']+1;
+                    $row['number'] = $args['edit'];
+                    $t2->replace(self::$tableName, $row);
+                    $t2->commit();
+                });
+            }
+
+            $args['it']++;
+
+            $row = $t->execute('SELECT * FROM '. self::$tableName .' WHERE id = @id', [
+                'parameters' => ['id' => $args['id']]
+            ])->rows()->current();
+
+            $args['post'] = $row['number'];
+            $this->assertEquals($row['number'], $args['post']);
+            $this->assertEquals($args['pre']+1, $row['number']);
+
+            $t->rollback();
+        });
     }
 
     /**
@@ -128,14 +207,14 @@ class TransactionTest extends SpannerTestCase
         $db2 = self::$database2;
 
         $id = $this->randId();
-        $db->insert(self::TABLE_NAME, [
+        $db->insert(self::$tableName, [
             'id' => $id,
             'number' => 0
         ]);
 
         $iteration = 0;
         $db->runTransaction(function ($transaction) use ($db2, $id, &$iteration) {
-            $row = $transaction->execute('SELECT * FROM '. self::TABLE_NAME .' WHERE id = @id', [
+            $row = $transaction->execute('SELECT * FROM '. self::$tableName .' WHERE id = @id', [
                 'parameters' => [
                     'id' => $id
                 ]
@@ -143,7 +222,7 @@ class TransactionTest extends SpannerTestCase
 
             if ($iteration === 0) {
                 $db2->runTransaction(function ($t2) use ($id) {
-                    $row = $t2->execute('SELECT * FROM '. self::TABLE_NAME .' WHERE id = @id', [
+                    $row = $t2->execute('SELECT * FROM '. self::$tableName .' WHERE id = @id', [
                         'parameters' => [
                             'id' => $id
                         ]
@@ -151,7 +230,7 @@ class TransactionTest extends SpannerTestCase
 
                     $row['number'] = $row['number']+1;
 
-                    $t2->update(self::TABLE_NAME, $row);
+                    $t2->update(self::$tableName, $row);
                     $t2->commit();
                 });
             }
@@ -159,11 +238,11 @@ class TransactionTest extends SpannerTestCase
             $row['number'] = $row['number']+1;
             $iteration++;
 
-            $transaction->update(self::TABLE_NAME, $row);
+            $transaction->update(self::$tableName, $row);
             $transaction->commit();
         });
 
-        $row = $db->execute('SELECT * FROM '. self::TABLE_NAME .' WHERE id = @id', [
+        $row = $db->execute('SELECT * FROM '. self::$tableName .' WHERE id = @id', [
             'parameters' => [
                 'id' => $id
             ]

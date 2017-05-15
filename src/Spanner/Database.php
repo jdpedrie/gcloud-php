@@ -96,7 +96,7 @@ class Database
     use LROTrait;
     use TransactionConfigurationTrait;
 
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 10;
 
     /**
      * @var ConnectionInterface
@@ -634,7 +634,7 @@ class Database
      *     Configuration Options
      *
      *     @type int $maxRetries The number of times to attempt to apply the
-     *           operation before failing. **Defaults to ** `3`.
+     *           operation before failing. **Defaults to ** `10`.
      *     @type bool $singleUse If true, a Transaction ID will not be allocated
      *           up front. Instead, the transaction will be considered
      *           "single-use", and may be used for only a single operation. Note
@@ -658,6 +658,10 @@ class Database
 
         $attempt = 0;
         $startTransactionFn = function ($session, $options) use (&$attempt) {
+            if ($attempt > 0) {
+                $options['isRetry'] = true;
+            }
+
             $transaction = $this->operation->transaction($session, $options);
 
             $attempt++;

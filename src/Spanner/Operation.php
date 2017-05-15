@@ -243,13 +243,17 @@ class Operation
      *           up front. Instead, the transaction will be considered
      *           "single-use", and may be used for only a single operation.
      *           **Defaults to** `false`.
+     *     @type bool $isRetry If true, the resulting transaction will indicate
+     *           that it is the result of a retry operation. **Defaults to**
+     *           `false`.
      * }
      * @return Transaction
      */
     public function transaction(Session $session, array $options = [])
     {
         $options += [
-            'singleUse' => false
+            'singleUse' => false,
+            'isRetry' => false
         ];
 
         if (!$options['singleUse']) {
@@ -297,15 +301,20 @@ class Operation
      *
      * @param Session $session The session the transaction belongs to.
      * @param array $res [optional] The createTransaction response.
+     * @param array $options [optional] Options for the transaction object.
      * @return Transaction
      */
-    public function createTransaction(Session $session, array $res = [])
+    public function createTransaction(Session $session, array $res = [], array $options = [])
     {
         $res += [
             'id' => null
         ];
 
-        return new Transaction($this, $session, $res['id']);
+        $options['isRetry'] = isset($options['isRetry'])
+            ? $options['isRetry']
+            : false;
+
+        return new Transaction($this, $session, $res['id'], $options['isRetry']);
     }
 
     /**
