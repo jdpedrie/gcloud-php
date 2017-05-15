@@ -46,6 +46,8 @@ class ResultTest extends SnippetTestCase
             ->willReturn([]);
         $result->columns()
             ->willReturn([]);
+        $result->session()
+            ->willReturn($this->prophesize(Session::class)->reveal());
         $result->snapshot()
             ->willReturn($this->prophesize(Snapshot::class)->reveal());
         $result->transaction()
@@ -93,6 +95,14 @@ class ResultTest extends SnippetTestCase
         $snippet->addLocal('result', $this->result);
         $res = $snippet->invoke('metadata');
         $this->assertInternalType('array', $res->returnVal());
+    }
+
+    public function testSession()
+    {
+        $snippet = $this->snippetFromMethod(Result::class, 'session');
+        $snippet->addLocal('result', $this->result);
+        $res = $snippet->invoke('session');
+        $this->assertInstanceOf(Session::class, $res->returnVal());
     }
 
     public function testStats()

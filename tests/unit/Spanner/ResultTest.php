@@ -20,6 +20,7 @@ namespace Google\Cloud\Tests\Unit\Spanner;
 use Google\Cloud\Core\Exception\ServiceException;
 use Google\Cloud\Spanner\Transaction;
 use Google\Cloud\Spanner\Result;
+use Google\Cloud\Spanner\Session\Session;
 use Google\Cloud\Spanner\Snapshot;
 use Google\Cloud\Spanner\ValueMapper;
 use Prophecy\Argument;
@@ -41,6 +42,13 @@ class ResultTest extends \PHPUnit_Framework_TestCase
             ]
         ]
     ];
+
+    public function setUp()
+    {
+        if (!extension_loaded('grpc')) {
+            $this->markTestSkipped('Must have the grpc extension installed to run this test.');
+        }
+    }
 
     /**
      * @dataProvider streamingDataProvider
@@ -149,6 +157,14 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($result->stats());
         $result->rows()->next();
         $this->assertEquals($expectedMetadata, $result->metadata());
+    }
+
+    public function testSession()
+    {
+        $fixture = $this->getStreamingDataFixture()['tests'][0];
+        $result = $this->getResultClass($fixture['chunks']);
+
+        $this->assertInstanceOf(Session::class, $result->session());
     }
 
     public function testStats()

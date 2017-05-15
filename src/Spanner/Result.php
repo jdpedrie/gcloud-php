@@ -238,6 +238,7 @@ class Result implements \IteratorAggregate
      * ```
      * $columns = $result->columns();
      * ```
+     *
      * @return array|null
      */
     public function columns()
@@ -262,6 +263,21 @@ class Result implements \IteratorAggregate
     public function metadata()
     {
         return $this->metadata;
+    }
+
+    /**
+     * Return the session associated with the result stream.
+     *
+     * Example:
+     * ```
+     * $session = $result->session();
+     * ```
+     *
+     * @return Session
+     */
+    public function session()
+    {
+        return $this->session;
     }
 
     /**
