@@ -26,6 +26,7 @@ use Google\Cloud\Firestore\Connection\ConnectionInterface;
 /**
  * Represents a Cloud Firestore Collection.
  *
+ *
  * Collections are implicit namespaces for Firestore Documents. They are created
  * when the first document is inserted, and cease to exist when the last
  * document is removed.
