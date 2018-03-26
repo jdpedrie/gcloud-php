@@ -18,7 +18,7 @@
     "extra": {
         "component": {
             "id": "cloud-debugger",
-            "target": "GoogleCloudPlatform/google-cloud-php-debugger.git",
+            "target": "jdpedrie/google-cloud-php-debugger.git",
             "path": "Debugger",
             "entry": "src/DebuggerClient.php"
         }
