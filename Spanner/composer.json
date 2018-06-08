@@ -22,7 +22,7 @@
     "extra": {
         "component": {
             "id": "cloud-spanner",
-            "target": "GoogleCloudPlatform/google-cloud-php-spanner.git",
+            "target": "jdpedrie/google-cloud-php-spanner.git",
             "path": "Spanner",
             "entry": "src/SpannerClient.php"
         }

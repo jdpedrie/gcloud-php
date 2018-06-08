@@ -13,7 +13,7 @@
             "id": "cloud-bigquerydatatransfer",
             "path": "BigQueryDataTransfer",
             "entry": null,
-            "target": "GoogleCloudPlatform/google-cloud-php-bigquerydatatransfer.git"
+            "target": "jdpedrie/google-cloud-php-bigquerydatatransfer.git"
         }
     },
     "require": {

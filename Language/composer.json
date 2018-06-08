@@ -23,7 +23,7 @@
     "extra": {
         "component": {
             "id": "cloud-language",
-            "target": "GoogleCloudPlatform/google-cloud-php-language.git",
+            "target": "jdpedrie/google-cloud-php-language.git",
             "path": "Language",
             "entry": "src/LanguageClient.php"
         }

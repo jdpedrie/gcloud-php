@@ -13,7 +13,7 @@
             "id": "cloud-oslogin",
             "path": "OsLogin",
             "entry": null,
-            "target": "GoogleCloudPlatform/google-cloud-php-oslogin.git"
+            "target": "jdpedrie/google-cloud-php-oslogin.git"
         }
     },
     "require": {
