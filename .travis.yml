@@ -5,17 +5,57 @@ dist: trusty
 jobs:
   include:
     - php: 7.2
+      install:
+        - pecl install grpc || echo 'Failed to install grpc'
+        - pecl install stackdriver_debugger-alpha || echo 'Failed to install stackdriver_debugger';
+        - composer self-update
+        - composer install
+        - ./dev/google-cloud credentials;
+
     # - php: 7.1
+    #   install:
+    #     - pecl install grpc || echo 'Failed to install grpc'
+    #     - pecl install stackdriver_debugger-alpha || echo 'Failed to install stackdriver_debugger';
+    #     - composer self-update
+    #     - composer install
+    #     - ./dev/google-cloud credentials;
+
     # - php: 7.0
-    # - php: 5.6.25
+    #   install:
+    #     - pecl install grpc || echo 'Failed to install grpc'
+    #     - pecl install stackdriver_debugger-alpha || echo 'Failed to install stackdriver_debugger';
+    #     - composer self-update
+    #     - composer install
+    #     - ./dev/google-cloud credentials;
+
+    - php: 5.6.25
+      install:
+        - pecl install grpc || echo 'Failed to install grpc'
+        - composer self-update
+        - composer install
+        - ./dev/google-cloud credentials;
+
     # - php: 5.5.38
-    # - php: hhvm-3.24
+    #   install:
+    #     - pecl install grpc || echo 'Failed to install grpc'
+    #     - composer self-update
+    #     - composer install
+    #     - ./dev/google-cloud credentials;
+
+    - php: hhvm-3.24
+      install:
+        - composer self-update
+        - composer install
+        - ./dev/google-cloud credentials;
+        - composer --no-interaction --dev remove google/protobuf google/gax google/proto-client;
+
     - stage: "Build Docs"
       php: 7.2
       install:
       - travis_retry composer install
       script:
       - ./dev/sh/build-docs
+
     - stage: "Push Docs"
       php: 7.2
       install:
@@ -23,6 +63,7 @@ jobs:
       script:
       - ./dev/sh/build-docs
       - ./dev/sh/push-docs $TRAVIS_BRANCH
+
     - stage: "Split Components"
       php: 7.2
       install:
@@ -39,7 +80,7 @@ jobs:
 stages:
   - test
   - name: "Build Docs"
-    if: (type = pull_request) OR (branch != master)
+    if: ((type = pull_request) OR (branch != master)) AND !(tag IS present)
   - name: "Push Docs"
     if: ((type != pull_request) AND (branch = master)) OR (tag IS present)
   - name: "Split Components"
@@ -49,14 +90,6 @@ env:
   global:
     - GOOGLE_CLOUD_PHP_TESTS_KEY_PATH=$TRAVIS_BUILD_DIR/keys/GOOGLE_CLOUD_PHP_TESTS.json
     - GOOGLE_CLOUD_PHP_TESTS_WHITELIST_KEY_PATH=$TRAVIS_BUILD_DIR/keys/GOOGLE_CLOUD_PHP_TESTS_WHITELIST.json
-
-before_script:
-- if [[ $TRAVIS_BUILD_STAGE_NAME == "test" ]]; then pecl install grpc || echo 'Failed to install grpc'; fi
-- if [[ $TRAVIS_PHP_VERSION =~ ^7 ]]; then pecl install stackdriver_debugger-alpha || echo 'Failed to install stackdriver_debugger'; fi
-- composer self-update
-- travis_retry composer install
-- if [[ $TRAVIS_PHP_VERSION =~ ^hhvm ]]; then composer --no-interaction --dev remove google/protobuf google/gax google/proto-client; fi
-- if [[ $TRAVIS_BUILD_STAGE_NAME == "test" ]]; then ./dev/google-cloud credentials; fi
 
 script:
 - ./dev/sh/tests

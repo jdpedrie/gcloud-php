@@ -89,15 +89,16 @@ class Split extends Command
         foreach ($components as $component) {
             $output->writeln('');
             $output->writeln(sprintf('<info>Starting on component %s</info>', $component['id']));
+            $output->writeln(sprintf('Using target %s', $component['target']));
             $output->writeln('------------');
             exec(sprintf(
                 '%s %s %s',
                 $this->splitShell,
                 $component['prefix'],
                 $component['target']
-            ), $output, $return);
+            ), $shellOutput, $return);
 
-            echo implode(PHP_EOL, $output);
+            echo implode(PHP_EOL, $shellOutput);
             if ($return !== 0) {
                 $errors[] = $component['id'] .': splitsh or git push failure';
             }
