@@ -43,6 +43,7 @@ jobs:
     #     - ./dev/google-cloud credentials;
 
     - php: hhvm-3.24
+      fast_finish: true
       install:
         - composer self-update
         - composer install
@@ -80,7 +81,7 @@ jobs:
 stages:
   - test
   - name: "Build Docs"
-    if: !(((type != pull_request) AND (branch = master)) OR (tag IS present))
+    if: (type = pull_request OR branch != master) AND NOT (tag IS present)
   - name: "Push Docs"
     if: ((type != pull_request) AND (branch = master)) OR (tag IS present)
   - name: "Split Components"
