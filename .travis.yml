@@ -80,7 +80,7 @@ jobs:
 stages:
   - test
   - name: "Build Docs"
-    if: ((type = pull_request) OR (branch != master)) AND !(tag IS present)
+    if: !(((type != pull_request) AND (branch = master)) OR (tag IS present))
   - name: "Push Docs"
     if: ((type != pull_request) AND (branch = master)) OR (tag IS present)
   - name: "Split Components"
