@@ -151,7 +151,7 @@ class Command extends GoogleCloudCommand
         }
 
         $componentId = $input->getOption('component');
-        $components = $this->components->componentsExtra($componentId);
+        $components = $this->components->componentsExtra($componentId, 'google-cloud');
 
         $manifestPath = $this->rootPath . '/docs/manifest.json';
 

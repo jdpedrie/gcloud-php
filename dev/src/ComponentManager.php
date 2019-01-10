@@ -75,14 +75,28 @@ class ComponentManager
      *
      * @param string $componentId [optional] If set, only this component's data
      *        will be returned.
+     * @param array|string $exclude [optional] A component ID, or array of
+     *        component IDs to exclude from the resulting array. Not supported
+     *        in PHP 5.5.
      * @return array[]
      */
-    public function componentsExtra($componentId = null)
+    public function componentsExtra($componentId = null, $exclude = null)
     {
+        if ($exclude === null) {
+            $exclude = [];
+        } elseif (!is_array($exclude)) {
+            $exclude = [$exclude];
+        }
+
         $components = $this->components ?: $this->loadComponents();
+        $components = array_filter($components, function ($component, $key = null) use ($exclude) {
+            return !in_array($key, $exclude);
+        }, ARRAY_FILTER_USE_BOTH);
 
         array_walk($components, function (&$component) {
+            $name = $component['composer']['name'];
             $component = $component['composer']['extra']['component'];
+            $component['displayName'] = $name;
         });
 
         return $componentId
