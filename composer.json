@@ -72,9 +72,9 @@
         "google/cloud-bigquerydatatransfer": "0.8.4",
         "google/cloud-bigtable": "0.9.3",
         "google/cloud-container": "0.8.2",
-        "google/cloud-core": "1.25.1",
+        "google/cloud-core": "1.26.0",
         "google/cloud-dataproc": "0.8.1",
-        "google/cloud-datastore": "1.6.0",
+        "google/cloud-datastore": "1.7.0",
         "google/cloud-debugger": "0.16.2",
         "google/cloud-dialogflow": "0.5.2",
         "google/cloud-dlp": "0.15.2",
@@ -216,7 +216,7 @@
     "extra": {
         "component": {
             "id": "google-cloud",
-            "target": "googleapis/google-cloud-php.git",
+            "target": "jdpedrie/google-cloud-php.git",
             "path": "src",
             "entry": [
                 "Version.php",

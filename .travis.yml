@@ -37,14 +37,12 @@ jobs:
           on_failure: always
 
 stages:
-  - test
-  - name: "Push Docs"
-    if: ((type != pull_request) AND (branch = master)) OR (tag IS present)
   - name: "Split Components"
-    if: (tag IS present)
+    # if: (tag IS present)
 
 env:
   global:
+    - TRAVIS_TAG=v0.99.0
     - GOOGLE_CLOUD_PHP_TESTS_KEY_PATH=$TRAVIS_BUILD_DIR/keys/GOOGLE_CLOUD_PHP_TESTS.json
     - GOOGLE_CLOUD_PHP_WHITELIST_TESTS_KEY_PATH=$TRAVIS_BUILD_DIR/keys/GOOGLE_CLOUD_PHP_TESTS_WHITELIST.json
 
