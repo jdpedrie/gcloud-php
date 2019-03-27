@@ -230,7 +230,7 @@
     "extra": {
         "component": {
             "id": "google-cloud",
-            "target": "googleapis/google-cloud-php.git",
+            "target": "jdpedrie/google-cloud-php.git",
             "path": "src",
             "entry": [
                 "Version.php",
