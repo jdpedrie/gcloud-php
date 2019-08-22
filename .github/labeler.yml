@@ -1,0 +1,107 @@
+"api: automl":
+- AutoMl/**
+
+"api: bigquery":
+- BigQuery/**
+
+"api: bigquerydatatransfer":
+- BigQueryDataTransfer/**
+
+"api: bigtable":
+- Bigtable/**
+
+"api: bigtableadmin":
+- Bigtable/src/Admin/**
+
+"api: cloudasset":
+- Asset/**
+
+"api: clouddebugger":
+- Debugger/**
+
+"api: clouderrorreporting":
+- ErrorReporting/**
+
+"api: cloudiot":
+- Iot/**
+
+"api: cloudkms":
+- Kms/**
+
+"api: cloudscheduler":
+- Scheduler/**
+
+"api: cloudtasks":
+- Tasks/**
+
+"api: cloudtrace":
+- Trace/**
+
+"api: core":
+- Core/**
+
+"api: dataproc":
+- Dataproc/**
+
+"api: datastore":
+- Datastore/**
+
+"api: dialogflow":
+- Dialogflow/**
+
+"api: dlp":
+- Dlp/**
+
+"api: firestore":
+- Firestore/**
+
+"api: language":
+- Language/**
+
+"api: logging":
+- Logging/**
+
+"api: monitoring":
+- Monitoring/**
+
+"api: oslogin":
+- OsLogin/**
+
+"api: pubsub":
+- PubSub/**
+
+"api: redis":
+- Redis/**
+
+"api: securitycenter":
+- SecurityCenter/**
+
+"api: spanner":
+- Spanner/**
+
+"api: speech":
+- Speech/**
+
+"api: storage":
+- Storage/**
+
+"api: talent":
+- Talent/**
+
+"api: texttospeech":
+- TestToSpeech/**
+
+"api: translation":
+- Translate/**
+
+"api: videointelligence":
+- VideoIntelligence/**
+
+"api: vision":
+- Vision/**
+
+"api: webrisk":
+- WebRisk/**
+
+"api: websecurityscanner":
+- WebSecurityScanner/**
