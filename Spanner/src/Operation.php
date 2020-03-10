@@ -170,7 +170,8 @@ class Operation
         $options += [
             'parameters' => [],
             'types' => [],
-            'transactionContext' => null
+            'transactionContext' => null,
+            'queryOptions' => []
         ];
 
         $parameters = $this->pluck('parameters', $options);
@@ -178,6 +179,10 @@ class Operation
         $options += $this->mapper->formatParamsForExecuteSql($parameters, $types);
 
         $context = $this->pluck('transactionContext', $options);
+
+        if (!isset($options['queryOptions']['optimizerVersion']) && getenv('SPANNER_QUERY_OPTIMIZER_VERSION')) {
+            $options['queryOptions']['optimizerVersion'] = getenv('SPANNER_QUERY_OPTIMIZER_VERSION');
+        }
 
         $call = function ($resumeToken = null) use ($session, $sql, $options) {
             if ($resumeToken) {

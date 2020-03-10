@@ -1343,6 +1343,20 @@ class Database
      *           **Defaults to** `SessionPoolInterface::CONTEXT_READ`.
      *     @type array $sessionOptions Session configuration and request options.
      *           Session labels may be applied using the `labels` key.
+     *     @type array $queryOptions Query optimizer configuration.
+     *     @type string $queryOptions.optimizerVersion An option to control the
+     *           selection of optimizer version. This parameter allows
+     *           individual queries to pick different query optimizer versions.
+     *           Specifying "latest" as a value instructs Cloud Spanner to use
+     *           the latest supported query optimizer version. If not specified,
+     *           Cloud Spanner uses optimizer version set at the database level
+     *           options. Any other positive integer (from the list of supported
+     *           optimizer versions) overrides the default optimizer version for
+     *           query execution. Executing a SQL statement with an invalid
+     *           optimizer version will fail with a syntax error
+     *           (`INVALID_ARGUMENT`) status. This value may also be controlled
+     *           using the `SPANNER_QUERY_OPTIMIZER_VERSION` environment
+     *           variable.
      * }
      * @codingStandardsIgnoreEnd
      * @return Result
