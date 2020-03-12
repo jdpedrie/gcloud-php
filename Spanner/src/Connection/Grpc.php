@@ -97,6 +97,11 @@ class Grpc implements ConnectionInterface
     /**
      * @var array
      */
+    private $queryOptions;
+
+    /**
+     * @var array
+     */
     private $mutationSetters = [
         'insert' => 'setInsert',
         'update' => 'setUpdate',
@@ -181,13 +186,6 @@ class Grpc implements ConnectionInterface
             }
         }
 
-        // Environment-level query options have a higher precedence than client-level query options.
-        $envQueryOptimizerVersion = getenv('SPANNER_OPTIMIZER_VERSION');
-        if (!empty($envQueryOptimizerVersion)) {
-            $config['queryOptions']['optimizerVersion'] = $envQueryOptimizerVersion;
-        }
-        $this->defaultQueryOptions = $config['queryOptions'];
-
         $this->spannerClient = isset($config['gapicSpannerClient'])
             ? $config['gapicSpannerClient']
             : $this->constructGapic(SpannerClient::class, $grpcConfig);
@@ -203,6 +201,7 @@ class Grpc implements ConnectionInterface
         //@codeCoverageIgnoreEnd
 
         $this->grpcConfig = $grpcConfig;
+        $this->queryOptions = $config['queryOptions'];
     }
 
     /**
@@ -610,11 +609,27 @@ class Grpc implements ConnectionInterface
 
         $database = $this->pluck('database', $args);
 
-        $args += ['queryOptions' => $this->defaultQueryOptions];
-        if (isset($args['queryOptions'])) {
+        // options given directly in the method args take top precedence.
+        // second priority is given to the environment variable.
+        // third priority is given to options defined at client construction.
+        // in the future, this logic would be better defined in Operation::execute().
+        $queryOptions = $this->pluck('queryOptions', $args, false) ?: [];
+        if (!$queryOptions && getenv('SPANNER_OPTIMIZER_VERSION')) {
+            $queryOptions = [
+                'optimizerVersion' => getenv('SPANNER_OPTIMIZER_VERSION')
+            ];
+        } elseif (!$queryOptions && $this->queryOptions) {
+            $queryOptions = $this->queryOptions;
+        } else {
+            $queryOptions = [
+                'optimizerVersion' => 'latest'
+            ];
+        }
+
+        if ($queryOptions) {
             $args['queryOptions'] = $this->serializer->decodeMessage(
                 new QueryOptions,
-                $args['queryOptions']
+                $queryOptions
             );
         }
 
