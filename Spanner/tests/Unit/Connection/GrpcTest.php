@@ -489,8 +489,12 @@ class GrpcTest extends TestCase
     /**
      * @dataProvider queryOptions
      */
-    public function testExecuteStreamingSqlWithDefaultQueryOptions(array $methodConfig, $envvar, array $clientConfig, $expectedVersion)
-    {
+    public function testExecuteStreamingSqlWithQueryOptions(
+        array $methodConfig,
+        $envvar,
+        array $clientConfig,
+        $expectedVersion
+    ) {
         $sql = 'SELECT 1';
 
         if ($envvar) {
