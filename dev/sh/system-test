@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for filename in $(dirname $0)/../../*/phpunit-system.xml.dist; do
+    echo "[SYSTEMTEST] Running test suite for "
+    echo $filename
+    $(dirname $0)/../../vendor/bin/phpunit -c $filename
+done

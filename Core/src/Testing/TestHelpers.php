@@ -176,7 +176,7 @@ class TestHelpers
      * @internal
      * @experimental
      */
-    public static function systemBootstrap()
+    public static function systemBootstrap($loadAll = false)
     {
         static $started = false;
 
@@ -186,9 +186,11 @@ class TestHelpers
 
         SystemTestCase::setupQueue();
 
-        $bootstraps = glob(self::projectRoot() .'/*/tests/System/bootstrap.php');
-        foreach ($bootstraps as $bootstrap) {
-            require_once $bootstrap;
+        if ($loadAll) {
+            $bootstraps = glob(self::projectRoot() .'/*/tests/System/bootstrap.php');
+            foreach ($bootstraps as $bootstrap) {
+                require_once $bootstrap;
+            }
         }
 
         // This should always be last.

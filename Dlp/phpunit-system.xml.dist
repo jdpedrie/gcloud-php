@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="./vendor/google/cloud-core/system-bootstrap.php" colors="true">
+<phpunit bootstrap="./tests/System/bootstrap.php" colors="true">
   <testsuites>
     <testsuite>
-      <directory>tests/System</directory>
+      <directory>./tests/System</directory>
     </testsuite>
   </testsuites>
   <filter>

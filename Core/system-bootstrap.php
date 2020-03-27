@@ -2,4 +2,4 @@
 
 use Google\Cloud\Core\Testing\TestHelpers;
 
-TestHelpers::systemBootstrap();
+TestHelpers::systemBootstrap(true);
