@@ -17,7 +17,9 @@
 
 namespace Google\Cloud\Core\Testing;
 
-class GcTestListener extends \PHPUnit_Framework_BaseTestListener
+use PHPUnit\Framework\BaseTestListener;
+
+class GcTestListener extends BaseTestListener
 {
     public function endTestSuite(\PHPUnit_Framework_TestSuite $suite)
     {
