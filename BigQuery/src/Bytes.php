@@ -43,7 +43,7 @@ class Bytes implements ValueInterface
     /**
      * @param string|resource|StreamInterface $value The bytes value.
      */
-    public function __construct($value)
+    public function __construct($value, $thing)
     {
         $this->value = Psr7\stream_for($value);
     }
