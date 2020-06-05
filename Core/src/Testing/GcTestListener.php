@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-class GcTestListener extends PHPUnit_Framework_BaseTestListener
+namespace Google\Cloud\Core\Testing;
+
+class GcTestListener extends \PHPUnit_Framework_BaseTestListener
 {
     public function endTestSuite(\PHPUnit_Framework_TestSuite $suite)
     {
