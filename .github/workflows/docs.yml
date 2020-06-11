@@ -1,0 +1,36 @@
+name: Generate Documentation
+on:
+    push:
+        branches:
+            - master
+        tags:
+            - "*"
+
+jobs:
+    docs:
+        name: "Generate Project Documentation"
+        runs-on: ubuntu-16.04
+        steps:
+        - name: Set Tag Name
+          run: echo '::set-env name=TAG_NAME::${{ github.event.release.tag_name }} && echo $TAG_NAME'
+        # - name: Checkout
+        #   uses: actions/checkout@v2
+        # - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+        # - name: Install Dependencies
+        #   uses: nick-invision/retry@v1
+        #   with:
+        #     timeout_minutes: 10
+        #     max_attempts: 3
+        #     command: composer update
+        # - name: Generate Documentation
+        #   uses: docker://php:7.3-cli
+        #   env:
+        #     GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        #   with:
+        #     entrypoint: ./dev/sh/build-docs
+        # - name: Deploy 🚀
+        #   uses: JamesIves/github-pages-deploy-action@releases/v3
+        #   with:
+        #     ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        #     BRANCH: gh-pages
+        #     FOLDER: .docs
