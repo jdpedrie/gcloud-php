@@ -12,7 +12,9 @@ jobs:
         runs-on: ubuntu-16.04
         steps:
         - name: Set Tag Name
-          run: echo '::set-env name=TAG_NAME::${{ github.event.release.tag_name }} && echo $TAG_NAME'
+          run: echo '::set-env name=TAG_NAME::${{ github.event.release.tag_name }}'
+        - name: Show Tag Name
+          run: echo $TAG_NAME
         # - name: Checkout
         #   uses: actions/checkout@v2
         # - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
