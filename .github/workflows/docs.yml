@@ -25,6 +25,7 @@ jobs:
           uses: docker://php:7.3-cli
           with:
             tagName: ${{ steps.tagName.outputs.tag }}
+            ini-values: memory_limit=2048M
             entrypoint: ./dev/sh/build-docs
         # - name: Deploy 🚀
         #   uses: JamesIves/github-pages-deploy-action@releases/v3
