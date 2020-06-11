@@ -29,7 +29,12 @@ jobs:
             php-version: '7.3'
             ini-values: memory_limit=2048M
         - name: Build Documentation
-          run: ./dev/sh/build-docs
+          run: |
+            if [ -z "$tagName" ]; then
+              ./dev/google-cloud docs
+            else
+              ./dev/google-cloud docs -r
+            fi
           env:
             tagName: ${{ steps.tagName.outputs.tag }}
         - name: Deploy 🚀
@@ -38,3 +43,4 @@ jobs:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             BRANCH: gh-pages
             FOLDER: docs/json
+            TARGET_FOLDER: json
