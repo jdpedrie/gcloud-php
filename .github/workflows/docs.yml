@@ -21,12 +21,16 @@ jobs:
             timeout_minutes: 10
             max_attempts: 3
             command: composer update
-        - name: Generate Documentation
-          uses: docker://php:7.3-cli
+        - name: Setup PHP
+          uses: shivammathur/setup-php@v2
+          with:
+            php-version: '7.3'
+            ini-values: memory_limit=2048M
+        - name: Build Documentation
+          run: './dev/sh/build-docs'
           with:
             tagName: ${{ steps.tagName.outputs.tag }}
-            ini-values: memory_limit=2048M
-            entrypoint: ./dev/sh/build-docs
+
         # - name: Deploy 🚀
         #   uses: JamesIves/github-pages-deploy-action@releases/v3
         #   with:
