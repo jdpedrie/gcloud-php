@@ -27,9 +27,12 @@ jobs:
             php-version: '7.3'
             ini-values: memory_limit=2048M
         - name: Build Documentation
+          run: ./dev/sh/build-docs
           with:
             tagName: ${{ steps.tagName.outputs.tag }}
-            entrypoint: ./dev/sh/build-docs
+
+
+            # entrypoint: ./dev/sh/build-docs
         # - name: Deploy 🚀
         #   uses: JamesIves/github-pages-deploy-action@releases/v3
         #   with:
