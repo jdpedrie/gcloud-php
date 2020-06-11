@@ -28,7 +28,7 @@ jobs:
             ini-values: memory_limit=2048M
         - name: Build Documentation
           run: ./dev/sh/build-docs
-          with:
+          env:
             tagName: ${{ steps.tagName.outputs.tag }}
 
 
