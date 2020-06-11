@@ -3,7 +3,7 @@
 set -ev
 
 function buildDocs () {
-  if [ -z "$TRAVIS_TAG" ]; then
+  if [ -z "$tagName" ]; then
     ./dev/google-cloud docs
   else
     ./dev/google-cloud docs -r
@@ -12,3 +12,7 @@ function buildDocs () {
 
 
 buildDocs
+
+if [ "${GITHUB_REF##*/}" == "master" ]; then
+  echo "hello"
+fi
