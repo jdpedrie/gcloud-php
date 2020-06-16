@@ -120,6 +120,7 @@ trait RequestWrapperTrait
     /**
      * Get the Keyfile.
      *
+     * @deprecated
      * @return array
      */
     public function keyFile()
@@ -130,6 +131,7 @@ trait RequestWrapperTrait
     /**
      * Get the scopes
      *
+     * @deprecated
      * @return array
      */
     public function scopes()
@@ -146,6 +148,7 @@ trait RequestWrapperTrait
      * - Application default credentials.
      * - Anonymous credentials.
      *
+     * @deprecated
      * @return FetchAuthTokenInterface
      */
     public function getCredentialsFetcher()

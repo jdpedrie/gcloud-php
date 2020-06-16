@@ -17,6 +17,7 @@
 
 namespace Google\Cloud\Storage;
 
+use Google\ApiCore\CredentialsWrapper;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Core\ArrayTrait;
 use Google\Cloud\Core\ClientTrait;
@@ -71,16 +72,20 @@ class StorageClient
      *     @type array $authCacheOptions Cache configuration options.
      *     @type callable $authHttpHandler A handler used to deliver Psr7
      *           requests specifically for authentication.
-     *     @type FetchAuthTokenInterface $credentialsFetcher A credentials
-     *           fetcher instance.
+     *     @type string|array|FetchAuthTokenInterface|CredentialsWrapper $credentials
+     *           The credentials to be used by the client to authorize API
+     *           calls. This option accepts either a path to a credentials file,
+     *           or a decoded credentials file as a PHP array.
+     *     @type FetchAuthTokenInterface $credentialsFetcher Deprecated. A
+     *           credentials fetcher instance.
      *     @type callable $httpHandler A handler used to deliver Psr7 requests.
      *           Only valid for requests sent over REST.
-     *     @type array $keyFile The contents of the service account credentials
-     *           .json file retrieved from the Google Developer's Console.
-     *           Ex: `json_decode(file_get_contents($path), true)`.
-     *     @type string $keyFilePath The full path to your service account
-     *           credentials .json file retrieved from the Google Developers
-     *           Console.
+     *     @type array $keyFile Deprecated. The contents of the service account
+     *           credentials json file retrieved from the Google Developer's
+     *           Console. Ex: `json_decode(file_get_contents($path), true)`.
+     *     @type string $keyFilePath Deprecated. The full path to your service
+     *           account credentials json file retrieved from the Google
+     *           Developers Console.
      *     @type float $requestTimeout Seconds to wait before timing out the
      *           request. **Defaults to** `0` with REST and `60` with gRPC.
      *     @type int $retries Number of retries for a failed request.

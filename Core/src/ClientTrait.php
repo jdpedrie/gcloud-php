@@ -17,9 +17,12 @@
 
 namespace Google\Cloud\Core;
 
-use Google\Auth\CredentialsLoader;
 use Google\Auth\Credentials\GCECredentials;
+use Google\Auth\Credentials\ServiceAccountCredentials;
+use Google\Auth\CredentialsLoader;
+use Google\Auth\FetchAuthTokenInterface;
 use Google\Auth\HttpHandler\HttpHandlerFactory;
+use Google\Auth\ProjectIdProviderInterface;
 use Google\Cloud\Core\Compute\Metadata;
 use Google\Cloud\Core\Exception\GoogleException;
 use GuzzleHttp\Psr7;
@@ -96,10 +99,50 @@ trait ClientTrait
      */
     private function configureAuthentication(array $config)
     {
-        $config['keyFile'] = $this->getKeyFile($config);
+        $config['credentialsFetcher'] = $this->getCredentials($config);
         $this->projectId = $this->detectProjectId($config);
 
         return $config;
+    }
+
+    private function getCredentials(array $config)
+    {
+        $config += [
+            'credentials' => null,
+            'credentialsFetcher' => null,
+            'keyFile' => null,
+            'keyFilePath' => null
+        ];
+
+        if ($config['credentials'] instanceof FetchAuthTokenInterface) {
+            return $config['credentials'];
+        }
+
+        if ($config['credentialsFetcher'] instanceof FetchAuthTokenInterface) {
+            return $config['credentialsFetcher'];
+        }
+
+        $keyfile = null;
+        if (isset($config['credentials'])) {
+            if (is_string($config['credentials'])) {
+                $keyfile = $this->getKeyFileFromString($config['credentials']);
+            } elseif (is_array($config['credentials'])) {
+                $keyfile = $config['credentials'];
+            }
+        } elseif ($config['keyFile']) {
+            $keyfile = $config['keyFile'];
+        } elseif ($config['keyFilePath']) {
+            $keyfile = $this->getKeyFileFromString($config['keyFilePath']);
+        } else {
+            $keyfile = CredentialsLoader::fromEnv()
+                ?: CredentialsLoader::fromWellKnownFile();
+        }
+
+        if (!$keyfile) {
+            throw new GoogleException("No authentication details were provided.");
+        }
+
+        return CredentialsLoader::makeCredentials($config['scopes'], $keyfile);
     }
 
     /**
@@ -129,27 +172,30 @@ trait ClientTrait
         }
 
         if ($config['keyFilePath']) {
-            if (!file_exists($config['keyFilePath'])) {
-                throw new GoogleException(sprintf(
-                    'Given keyfile path %s does not exist',
-                    $config['keyFilePath']
-                ));
-            }
-
-            try {
-                $keyFileData = $this->jsonDecode(file_get_contents($config['keyFilePath']), true);
-            } catch (\InvalidArgumentException $ex) {
-                throw new GoogleException(sprintf(
-                    'Given keyfile at path %s was invalid',
-                    $config['keyFilePath']
-                ));
-            }
-
-            return $keyFileData;
+            return $this->getKeyFileFromString($config['keyFilePath']);
         }
 
         return CredentialsLoader::fromEnv()
             ?: CredentialsLoader::fromWellKnownFile();
+    }
+
+    private function getKeyFileFromString($path)
+    {
+        if (!file_exists($path)) {
+            throw new GoogleException(sprintf(
+                'Given keyfile path %s does not exist',
+                $path
+            ));
+        }
+
+        try {
+            return $this->jsonDecode(file_get_contents($path), true);
+        } catch (\InvalidArgumentException $ex) {
+            throw new GoogleException(sprintf(
+                'Given keyfile at path %s was invalid',
+                $path
+            ));
+        }
     }
 
     /**
@@ -178,7 +224,8 @@ trait ClientTrait
             'projectIdRequired' => false,
             'hasEmulator' => false,
             'preferNumericProjectId' => false,
-            'suppressKeyFileNotice' => false
+            'suppressKeyFileNotice' => false,
+            'credentialsFetcher' => null,
         ];
 
         if ($config['projectId']) {
@@ -189,12 +236,15 @@ trait ClientTrait
             return 'emulator-project';
         }
 
-        if (isset($config['keyFile'])) {
-            if (isset($config['keyFile']['project_id'])) {
-                return $config['keyFile']['project_id'];
+        if ($config['credentialsFetcher'] instanceof ProjectIdProviderInterface) {
+            if ($config['credentialsFetcher'] instanceof GCECredentials && $config['preferNumericProjectId']) {
+                $metadata = $this->getMetaData();
+                return $metadata->getNumericProjectId();
             }
 
-            if ($config['suppressKeyFileNotice'] !== true) {
+            $projectId = $config['credentials']->getProjectId();
+
+            if (!$projectId && !$config['suppressKeyFileNotice']) {
                 $serviceAccountUri = 'https://cloud.google.com/iam/docs/' .
                     'creating-managing-service-account-keys#creating_service_account_keys';
 
@@ -210,6 +260,8 @@ trait ClientTrait
                     E_USER_NOTICE
                 );
             }
+
+            return $projectId;
         }
 
         if (getenv('GOOGLE_CLOUD_PROJECT')) {
@@ -218,16 +270,6 @@ trait ClientTrait
 
         if (getenv('GCLOUD_PROJECT')) {
             return getenv('GCLOUD_PROJECT');
-        }
-
-        if ($this->onGce($config['httpHandler'])) {
-            $metadata = $this->getMetaData();
-            $projectId = $config['preferNumericProjectId']
-                ? $metadata->getNumericProjectId()
-                : $metadata->getProjectId();
-            if ($projectId) {
-                return $projectId;
-            }
         }
 
         if ($config['projectIdRequired']) {

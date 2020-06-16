@@ -305,6 +305,7 @@ class RequestWrapper
     /**
      * Fetches credentials.
      *
+     * @deprecated
      * @return array
      */
     private function fetchCredentials()
