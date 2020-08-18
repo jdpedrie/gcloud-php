@@ -60,6 +60,11 @@ class CollectionReference extends Query
     private $name;
 
     /**
+     * @var DocumentReference|null
+     */
+    private $parent;
+
+    /**
      * @param ConnectionInterface $connection A Connection to Cloud Firestore.
      * @param ValueMapper $valueMapper A Firestore Value Mapper.
      * @param string $name The absolute name of the collection.
@@ -67,11 +72,13 @@ class CollectionReference extends Query
     public function __construct(
         ConnectionInterface $connection,
         ValueMapper $valueMapper,
-        $name
+        $name,
+        DocumentReference $parent = null
     ) {
         $this->connection = $connection;
         $this->valueMapper = $valueMapper;
         $this->name = $name;
+        $this->parent = $parent;
 
         parent::__construct(
             $connection,
@@ -146,6 +153,23 @@ class CollectionReference extends Query
     public function id()
     {
         return $this->pathId($this->name);
+    }
+
+    /**
+     * Get the parent DocumentReference, if one is available.
+     *
+     * If the collection is at the database root, this method will always return
+     * null.
+     * Example:
+     * ```
+     * $parent = $collection->parent();
+     * ```
+     *
+     * @return DocumentReference|null
+     */
+    public function parent()
+    {
+        return $this->parent;
     }
 
     /**

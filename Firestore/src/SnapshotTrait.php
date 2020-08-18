@@ -270,8 +270,12 @@ trait SnapshotTrait
         $database,
         $name
     ) {
+        $relativeName = "";
         if ($this->isRelative($name)) {
+            $relativeName = $name;
             $name = $this->fullName($projectId, $database, $name);
+        } else {
+            $relativeName = $this->relativeName($name);
         }
 
         if (!$this->isCollection($name)) {
@@ -281,7 +285,18 @@ trait SnapshotTrait
             ));
         }
 
-        return new CollectionReference($connection, $mapper, $name);
+        $parent = null;
+        if (count(explode('/', $relativeName)) > 1) {
+            $parent = $this->getDocumentReference(
+                $this->connection,
+                $this->valueMapper,
+                $this->projectId,
+                $this->database,
+                $this->parentPath($name)
+            );
+        }
+
+        return new CollectionReference($connection, $mapper, $name, $parent);
     }
 
     /**

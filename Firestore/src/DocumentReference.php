@@ -363,7 +363,8 @@ class DocumentReference
         return new CollectionReference(
             $this->connection,
             $this->valueMapper,
-            $this->childPath($this->name, $collectionId)
+            $this->childPath($this->name, $collectionId),
+            $this
         );
     }
 

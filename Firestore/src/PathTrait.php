@@ -168,6 +168,31 @@ trait PathTrait
     }
 
     /**
+     * Get the document root path.
+     *
+     * @param string $project The project ID.
+     * @param string $database The database ID.
+     * @return string
+     */
+    private function getDocumentRoot($project, $database)
+    {
+        return FirestoreGapicClient::documentRootName($project, $database);
+    }
+
+    /**
+     * Determine whether the given path is the document root.
+     *
+     * @param string $project The project ID.
+     * @param string $database The database ID.
+     * @param string $path The comparison path.
+     * @return bool
+     */
+    private function isDocumentRoot($project, $database, $path)
+    {
+        return $path === $this->getDocumentRoot($project, $database);
+    }
+
+    /**
      * Split a path into pieces at the separator (`/`).
      *
      * @param string $name

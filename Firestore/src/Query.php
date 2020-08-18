@@ -123,7 +123,7 @@ class Query
     private $valueMapper;
 
     /**
-     * @var string
+     * @var DocumentReference|null
      */
     private $parent;
 
@@ -133,9 +133,19 @@ class Query
     private $query;
 
     /**
+     * @var string
+     */
+    private $projectId;
+
+    /**
+     * @var string
+     */
+    private $databaseId;
+
+    /**
      * @param ConnectionInterface $connection A Connection to Cloud Firestore.
      * @param ValueMapper $valueMapper A Firestore Value Mapper.
-     * @param string $parent The parent of the query.
+     * @param DocumentReference|string $parent The parent of the query.
      * @param array $query The Query object
      * @throws \InvalidArgumentException If the query does not provide a valid selector.
      */
@@ -147,8 +157,19 @@ class Query
     ) {
         $this->connection = $connection;
         $this->valueMapper = $valueMapper;
-        $this->parent = $parent;
         $this->query = $query;
+
+        $this->projectId = $this->projectIdFromName($parent);
+        $this->databaseId = $this->databaseIdFromName($parent);
+        if (is_string($parent) && !$this->isDocumentRoot($this->projectId, $this->databaseId, $parent)) {
+            $this->parent = $this->getDocumentReference(
+                $connection,
+                $valueMapper,
+                $this->projectId,
+                $this->databaseId,
+                $parent
+            );
+        }
 
         if (!isset($this->query['from'])) {
             throw new \InvalidArgumentException(
@@ -187,7 +208,7 @@ class Query
             $query = $this->finalQueryPrepare($this->query);
 
             $generator = $this->connection->runQuery($this->arrayFilterRemoveNull([
-                'parent' => $this->parent,
+                'parent' => $this->getParentPath(),
                 'structuredQuery' => $query,
                 'retries' => 0
             ]) + $options);
@@ -921,7 +942,14 @@ class Query
     private function basePath()
     {
         return $this->allDescendants()
-            ? $this->parent
-            : $this->childPath($this->parent, $this->query['from'][0]['collectionId']);
+            ? $this->getParentPath()
+            : $this->childPath($this->getParentPath(), $this->query['from'][0]['collectionId']);
+    }
+
+    private function getParentPath()
+    {
+        return $this->parent
+            ? $this->parent->name()
+            : $this->getDocumentRoot($this->projectId, $this->databaseId);
     }
 }
