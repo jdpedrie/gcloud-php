@@ -1,0 +1,1 @@
+../google/cloud-tools/scripts/dump_credentials.php
