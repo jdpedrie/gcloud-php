@@ -9,20 +9,20 @@ on:
       - 'PubSub/**'
 name: Run PubSub System Tests With Emulator
 jobs:
-  php-test:
+  test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
 
-      - run: apk add expect && unbuffer ./start-pubsub-emulator.sh
+      - run: ./.github/emulator/pubsub.sh
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v1
+        uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
           tools: pecl
-          extensions: bcmath, grpc
+          extensions: grpc
 
       - name: Install dependencies
         run: |
@@ -30,6 +30,7 @@ jobs:
 
       - name: Run system tests
         run: |
-          PubSub/vendor/bin/phpunit -c PubSub/phpunit-system.xml.dist
+          PubSub/vendor/bin/phpunit -c PubSub/phpunit-system.xml.dist --exclude-group gapic
         env:
           PUBSUB_EMULATOR_HOST: localhost:8085
+          PROJECT_ID: my-project-id
