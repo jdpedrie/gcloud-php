@@ -23,7 +23,7 @@
             "id": "cloud-asset",
             "path": "Asset",
             "entry": null,
-            "target": "googleapis/google-cloud-php-asset.git"
+            "target": "jdpedrie/google-cloud-php-asset.git"
         }
     },
     "require": {

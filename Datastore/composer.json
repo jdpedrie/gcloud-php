@@ -16,7 +16,7 @@
     "extra": {
         "component": {
             "id": "cloud-datastore",
-            "target": "googleapis/google-cloud-php-datastore.git",
+            "target": "jdpedrie/google-cloud-php-datastore.git",
             "path": "Datastore",
             "entry": "src/DatastoreClient.php"
         }
