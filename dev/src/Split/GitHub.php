@@ -183,19 +183,23 @@ class GitHub
      * @param string $ref The commit reference.
      * @param string $targetBranch The remote branch to push to. **Defaults to**
      *        `master`.
-     * @param bool $force If true, will use `--force` flag. **Defaults to**
-     *        `true`.
+     * @param bool $initialCommit If true, attempt to create target branch.
+     *        **Defaults to** `false`.
      * @return array A list containing [(bool) $success, (string) $output].
      */
-    public function push($target, $ref, $targetBranch = 'master', $force = true)
+    public function push($target, $ref, $targetBranch = 'master', $initialCommit = false)
     {
+        $targetRef = $initialCommit
+            ? 'refs/heads/' . $targetBranch
+            : $targetBranch;
+
         $cmd = [
             'git push -q',
             sprintf('https://%s@github.com/%s', $this->token, $target),
-            sprintf('%s:%s', $ref, $targetBranch)
+            sprintf('%s:%s', $ref, $targetRef)
         ];
 
-        if ($force) {
+        if (!$initialCommit) {
             $cmd[] = '--force';
         }
 

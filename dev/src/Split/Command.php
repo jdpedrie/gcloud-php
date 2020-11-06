@@ -108,6 +108,9 @@ class Command extends GoogleCloudCommand
             throw new \RuntimeException('This command is only available in PHP 5.6 and later.');
         }
 
+        $output->writeln("<info>[INFO]</info>: Parent repository: " . $input->getArgument('repo'));
+        $output->writeln("<info>[INFO]</info>: Parent tag: " . $input->getArgument('parent'));
+
         $execDir = $this->rootPath . '/' . self::EXEC_DIR;
         $token = $this->githubToken($input->getOption('token'));
 
@@ -246,7 +249,7 @@ class Command extends GoogleCloudCommand
             $component['target']
         ));
 
-        $res = $github->push($component['target'], $splitBranch, $defaultBranch, !$isTargetEmpty);
+        $res = $github->push($component['target'], $splitBranch, $defaultBranch, $isTargetEmpty);
         if ($res[0]) {
             $output->writeln(sprintf('<comment>%s</comment>: Push succeeded.', $component['id']));
         } else {

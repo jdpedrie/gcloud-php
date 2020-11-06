@@ -61,10 +61,10 @@ class ReleaseNotes
             $nodeValue = trim($d->nodeValue);
 
             $firstLine = explode(PHP_EOL, $nodeValue)[0];
-            preg_match('/(\S{0,}\/\S{1,})/', $firstLine, $matches);
+            preg_match('/\S{0,}\/(\S{1,})/', $firstLine, $matches);
             if (count($matches) > 0) {
                 $component = $matches[1];
-                $this->changelog[$component] = $nodeValue;
+                $this->changelog[$component] = '## ' . $nodeValue;
             }
         }
     }
